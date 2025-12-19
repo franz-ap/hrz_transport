@@ -1,8 +1,5 @@
 #-------------------------------------------------------------------------------------------#
-# Redmine utility/library plugin.                                                           #
-# Provides common functions to other plugins,                                               #
-#          a REST API for CustomField creation/modification,                                #
-#          a transport utility for developers/admins.                                       #
+# Redmine transport utility plugin for developers/admins.                                   #
 # Copyright (C) 2025 Franz Apeltauer                                                        #
 #                                                                                           #
 # This program is free software: you can redistribute it and/or modify it under the terms   #
