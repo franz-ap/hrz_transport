@@ -1,0 +1,75 @@
+# English locale for HRZ Lib plugin
+en:
+  # Settings
+  label_hrz_transport_settings: "Transport"
+  label_hrz_transport_target_url: "Base URL of target instance"
+  help_hrz_transport_target_url: "Enter the full URL of the target Redmine instance (e.g. https://target-redmine.example.com). With or without trailing slash."
+  
+  # Transport page
+  label_hrz_transports: "Transports"
+  label_hrz_comparison_options: "Comparison Options"
+  label_hrz_comparison_scope: "Comparison Scope"
+  label_hrz_compare_all_fields: "Compare all Custom Fields"
+  label_hrz_compare_project_fields: "Compare only Custom Fields of local project"
+  notice_hrz_please_select_project: "Please select a project to compare custom fields."
+  label_hrz_transport_direction: "Transport Direction"
+  label_hrz_readonly: "No transport, only comparison (read-only)"
+  label_hrz_local_to_target: "Enable transport from local instance to target"
+  label_hrz_target_to_local: "Enable transport from target instance to local"
+  label_hrz_documentation_issues: "Documentation Issues"
+  label_hrz_doc_issue_local: "Documentation Issue local"
+  label_hrz_doc_issue_target: "Documentation Issue target"
+  help_hrz_doc_issue: "Optional issue ID for transport documentation"
+  notice_hrz_please_select_project: "Please select a project to compare custom fields."
+  warning_hrz_no_fields_to_compare: "No custom fields found to compare."
+  error_hrz_cannot_connect_to_target: "Cannot connect to target instance. Please check the target URL and your API key."
+  error_hrz_connection_failed: "Connection error: %{error}"
+  
+  # Comparison results
+  label_hrz_comparison_results: "Comparison Results"
+  label_hrz_target_instance: "Target Instance"
+  label_hrz_fields_compared: "Fields Compared"
+  label_hrz_field_name: "Field Name"
+  label_hrz_field_type: "Type"
+  label_hrz_status: "Status"
+  label_hrz_local_values: "Local Values"
+  label_hrz_transport: "Transport"
+  label_hrz_target_values: "Target Values"
+  label_hrz_identical: "Identical"
+  label_hrz_different: "Different"
+  label_hrz_not_exists: "Does not exist"
+  
+  # Field types
+  label_hrz_type_issue: "Issue"
+  label_hrz_type_project: "Project"
+  label_hrz_type_user: "User"
+  label_hrz_type_time_entry: "Time Entry"
+  label_hrz_type_version: "Version"
+  label_hrz_type_document: "Document"
+  label_hrz_type_group: "Group"
+  
+  # Field properties
+  label_hrz_property_name: "Name"
+  label_hrz_property_field_format: "Field Format"
+  label_hrz_property_is_required: "Required"
+  label_hrz_property_possible_values: "Possible Values"
+  label_hrz_property_default_value: "Default Value"
+  label_hrz_property_formula: "Formula"
+  label_hrz_property_existence: "Existence"
+  
+  # Transport actions
+  label_hrz_execute_transport_local_to_target: "Execute transport to target"
+  label_hrz_execute_transport_target_to_local: "Execute transport from target"
+  text_hrz_confirm_transport: "Do you really want to transport the definition of field '%{field}'? This action cannot be undone."
+  
+  # Messages
+  warning_hrz_no_target_url: "Please configure the target URL in the plugin settings first."
+  notice_hrz_transport_success: "Custom Field '%{field_name}' was successfully transported."
+  error_hrz_transport_failed: "Transport failed: %{error}"
+  error_hrz_cannot_fetch_target_fields: "Cannot fetch custom fields from target instance. Please check the target URL and your API key."
+  error_hrz_comparison_failed: "Comparison failed: %{error}"
+  error_project_not_found: "Project not found."
+  
+  button_compare: "Compare"
+  label_configure: "Configure"
+  label_please_select: "Please select"

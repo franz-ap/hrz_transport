@@ -1,0 +1,75 @@
+# German locale for HRZ Lib plugin
+de:
+  # Settings
+  label_hrz_transport_settings: "Transport"
+  label_hrz_transport_target_url: "Basis-URL der Zielinstanz"
+  help_hrz_transport_target_url: "Geben Sie die vollständige URL der Ziel-Redmine-Instanz an (z.B. https://target-redmine.example.com). Mit oder ohne abschließenden Schrägstrich."
+  
+  # Transport page
+  label_hrz_transports: "Transport"
+  label_hrz_comparison_options: "Vergleichsoptionen"
+  label_hrz_comparison_scope: "Vergleichsumfang"
+  label_hrz_compare_all_fields: "Alle Custom Fields vergleichen"
+  label_hrz_compare_project_fields: "Nur Custom Fields des lokalen Projekts vergleichen"
+  notice_hrz_please_select_project: "Bitte wählen Sie ein Projekt aus, um die Custom Fields zu vergleichen."
+  label_hrz_transport_direction: "Transport-Richtung"
+  label_hrz_readonly: "Kein Transport, nur Vergleich (schreibgeschützt)"
+  label_hrz_local_to_target: "Transport von lokaler Instanz zum Ziel aktivieren"
+  label_hrz_target_to_local: "Transport vom Ziel zur lokalen Instanz aktivieren"
+  label_hrz_documentation_issues: "Dokumentations-Tickets"
+  label_hrz_doc_issue_local: "Dokumentations-Ticket lokal"
+  label_hrz_doc_issue_target: "Dokumentations-Ticket Ziel"
+  help_hrz_doc_issue: "Optionale Ticket-ID für Transport-Dokumentation"
+  notice_hrz_please_select_project: "Bitte wählen Sie ein Projekt aus, um die Custom Fields zu vergleichen."
+  warning_hrz_no_fields_to_compare: "Keine Custom Fields zum Vergleichen gefunden."
+  error_hrz_cannot_connect_to_target: "Verbindung zur Zielinstanz fehlgeschlagen. Bitte prüfen Sie die Ziel-URL und Ihren API-Key."
+  error_hrz_connection_failed: "Verbindungsfehler: %{error}"
+  
+  # Comparison results
+  label_hrz_comparison_results: "Vergleichsergebnisse"
+  label_hrz_target_instance: "Zielinstanz"
+  label_hrz_fields_compared: "Verglichene Felder"
+  label_hrz_field_name: "Feldname"
+  label_hrz_field_type: "Typ"
+  label_hrz_status: "Status"
+  label_hrz_local_values: "Lokale Werte"
+  label_hrz_transport: "Transport"
+  label_hrz_target_values: "Ziel-Werte"
+  label_hrz_identical: "Identisch"
+  label_hrz_different: "Unterschiedlich"
+  label_hrz_not_exists: "Existiert nicht"
+  
+  # Field types
+  label_hrz_type_issue: "Ticket"
+  label_hrz_type_project: "Projekt"
+  label_hrz_type_user: "Benutzer"
+  label_hrz_type_time_entry: "Zeiterfassung"
+  label_hrz_type_version: "Version"
+  label_hrz_type_document: "Dokument"
+  label_hrz_type_group: "Gruppe"
+  
+  # Field properties
+  label_hrz_property_name: "Name"
+  label_hrz_property_field_format: "Feldformat"
+  label_hrz_property_is_required: "Pflichtfeld"
+  label_hrz_property_possible_values: "Mögliche Werte"
+  label_hrz_property_default_value: "Standardwert"
+  label_hrz_property_formula: "Formel"
+  label_hrz_property_existence: "Existenz"
+  
+  # Transport actions
+  label_hrz_execute_transport_local_to_target: "Transport zum Ziel ausführen"
+  label_hrz_execute_transport_target_to_local: "Transport vom Ziel ausführen"
+  text_hrz_confirm_transport: "Möchten Sie die Definition des Feldes '%{field}' wirklich transportieren? Diese Aktion kann nicht rückgängig gemacht werden."
+  
+  # Messages
+  warning_hrz_no_target_url: "Bitte konfigurieren Sie zuerst die Ziel-URL in den Plugin-Einstellungen."
+  notice_hrz_transport_success: "Custom Field '%{field_name}' wurde erfolgreich transportiert."
+  error_hrz_transport_failed: "Transport fehlgeschlagen: %{error}"
+  error_hrz_cannot_fetch_target_fields: "Kann Custom Fields der Zielinstanz nicht abrufen. Bitte prüfen Sie die Ziel-URL und Ihren API-Key."
+  error_hrz_comparison_failed: "Vergleich fehlgeschlagen: %{error}"
+  error_project_not_found: "Projekt nicht gefunden."
+  
+  button_compare: "Vergleichen"
+  label_configure: "Konfigurieren"
+  label_please_select: "Bitte wählen"
