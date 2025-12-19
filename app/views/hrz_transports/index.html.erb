@@ -1,0 +1,343 @@
+<%#-----------------------------------------------------------------------------------------#
+# Redmine utility/library plugin.                                                           #
+# Provides common functions to other plugins,                                               #
+#          a REST API for CustomField creation/modification,                                #
+#          a transport utility for developers/admins.                                       #
+# Copyright (C) 2025 Franz Apeltauer                                                        #
+#                                                                                           #
+# This program is free software: you can redistribute it and/or modify it under the terms   #
+# of the GNU Affero General Public License as published by the Free Software Foundation,    #
+# either version 3 of the License, or (at your option) any later version.                   #
+#                                                                                           #
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; #
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. #
+# See the GNU Affero General Public License for more details.                               #
+#                                                                                           #
+# You should have received a copy of the GNU Affero General Public License                  #
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.                    #
+#-------------------------------------------------------------------------------------eohdr-#%>
+<%# Purpose: Main view for custom field transport comparison and execution. %>
+
+<h2><%= l(:label_hrz_transports) %></h2>
+
+<% if @target_url.blank? %>
+  <div class="flash warning">
+    <%= l(:warning_hrz_no_target_url) %>
+    <%= link_to l(:label_configure), plugin_settings_path(:hrz_lib) %>
+  </div>
+<% else %>
+
+<%= form_tag(hrz_transports_path, method: :get, class: 'hrz-transport-form') do %>
+  <fieldset class="box">
+    <legend><%= l(:label_hrz_comparison_options) %></legend>
+    
+    <p>
+      <label><%= l(:label_hrz_comparison_scope) %></label>
+      <%= select_tag 'comparison_scope',
+                     options_for_select([
+                       [l(:label_hrz_compare_all_fields), 'all'],
+                       [l(:label_hrz_compare_project_fields), 'project']
+                     ], @comparison_scope),
+                     onchange: 'handleScopeChange(this)' %>
+    </p>
+    
+    <div id="project-selection" style="<%= @comparison_scope == 'all' ? 'display:none;' : '' %>">
+      <p>
+        <label><%= l(:label_project) %> <span class="required">*</span></label>
+        <%= select_tag 'project_id',
+                       options_from_collection_for_select(@projects, :id, :name, @selected_project_id),
+                       prompt: l(:label_please_select),
+                       onchange: 'this.form.submit()' %>
+      </p>
+    </div>
+    
+    <p>
+      <label><%= l(:label_hrz_transport_direction) %></label>
+      <%= select_tag 'transport_direction',
+                     options_for_select([
+                       [l(:label_hrz_readonly), 'readonly'],
+                       [l(:label_hrz_local_to_target), 'local_to_target'],
+                       [l(:label_hrz_target_to_local), 'target_to_local']
+                     ], @transport_direction) %>
+    </p>
+  </fieldset>
+  
+  <fieldset class="box">
+    <legend><%= l(:label_hrz_documentation_issues) %></legend>
+    
+    <p>
+      <label><%= l(:label_hrz_doc_issue_local) %></label>
+      <%= text_field_tag 'doc_issue_local', @doc_issue_local, size: 10, placeholder: '123' %>
+      <em class="info"><%= l(:help_hrz_doc_issue) %></em>
+    </p>
+    
+    <p>
+      <label><%= l(:label_hrz_doc_issue_target) %></label>
+      <%= text_field_tag 'doc_issue_target', @doc_issue_target, size: 10, placeholder: '456' %>
+      <em class="info"><%= l(:help_hrz_doc_issue) %></em>
+    </p>
+  </fieldset>
+<% end %>
+
+<% if @comparison_results %>
+  <h3><%= l(:label_hrz_comparison_results) %></h3>
+  
+  <p class="info-box">
+    <strong><%= l(:label_hrz_target_instance) %>:</strong> <%= @target_url %><br/>
+    <strong><%= l(:label_hrz_fields_compared) %>:</strong> <%= @comparison_results.length %>
+  </p>
+  
+  <table class="list hrz-comparison-table">
+    <thead>
+      <tr>
+        <th><%= l(:label_hrz_field_name) %></th>
+        <th><%= l(:label_hrz_field_type) %></th>
+        <th class="status-column"><%= l(:label_hrz_status) %></th>
+        <th><%= l(:label_hrz_local_values) %></th>
+        <th class="transport-column"><%= l(:label_hrz_transport) %></th>
+        <th><%= l(:label_hrz_target_values) %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @comparison_results.each do |result| %>
+        <tr class="<%= result[:is_identical] ? 'identical' : 'different' %>">
+          <td class="field-name">
+            <%= result[:name] %>
+            <br/>
+            <small class="customized-type"><%= l("label_hrz_type_#{result[:customized_type]}") %></small>
+          </td>
+          <td class="field-type"><%= result[:local_type] %></td>
+          <td class="status-column">
+            <% if result[:is_identical] %>
+              <span class="icon icon-ok" title="<%= l(:label_hrz_identical) %>">✓</span>
+            <% else %>
+              <span class="icon icon-not-ok" title="<%= l(:label_hrz_different) %>">≠</span>
+            <% end %>
+          </td>
+          <td class="differences">
+            <% if result[:differences].present? %>
+              <% result[:differences].each do |diff| %>
+                <div class="difference-item">
+                  <strong><%= l("label_hrz_property_#{diff[:property]}") %>:</strong>
+                  <span class="value"><%= diff[:local_value] %></span>
+                </div>
+              <% end %>
+            <% else %>
+              <span class="no-differences">—</span>
+            <% end %>
+          </td>
+          <td class="transport-column">
+            <% if @transport_direction != 'readonly' && !result[:is_identical] && result[:exists_in_target] %>
+              <%= link_to '', 
+                          hrz_transports_execute_path(
+                            field_id: result[:local_id],
+                            direction: @transport_direction,
+                            comparison_scope: @comparison_scope,
+                            project_id: @selected_project_id,
+                            transport_direction: @transport_direction,
+                            doc_issue_local: @doc_issue_local,
+                            doc_issue_target: @doc_issue_target
+                          ),
+                          method: :post,
+                          class: "transport-arrow #{@transport_direction}",
+                          title: l("label_hrz_execute_transport_#{@transport_direction}"),
+                          data: { confirm: l(:text_hrz_confirm_transport, field: result[:name]) } %>
+            <% end %>
+          </td>
+          <td class="differences">
+            <% if result[:exists_in_target] %>
+              <% if result[:differences].present? %>
+                <% result[:differences].each do |diff| %>
+                  <div class="difference-item">
+                    <strong><%= l("label_hrz_property_#{diff[:property]}") %>:</strong>
+                    <span class="value"><%= diff[:target_value] %></span>
+                  </div>
+                <% end %>
+              <% else %>
+                <span class="no-differences">—</span>
+              <% end %>
+            <% else %>
+              <span class="not-exists"><%= l(:label_hrz_not_exists) %></span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% elsif @comparison_scope == 'project' && @selected_project_id.blank? %>
+  <div class="flash notice">
+    <%= l(:notice_hrz_please_select_project) %>
+  </div>
+<% end %>
+
+<% end %>
+
+<script>
+  function handleScopeChange(select) {
+    var projectSelection = document.getElementById('project-selection');
+    if (select.value === 'project') {
+      projectSelection.style.display = 'block';
+    } else {
+      projectSelection.style.display = 'none';
+      // Submit form immediately for 'all' scope
+      select.form.submit();
+    }
+  }
+</script>
+
+<style>
+  .hrz-transport-form fieldset {
+    margin-bottom: 20px;
+  }
+  
+  .hrz-transport-form p {
+    margin: 10px 0;
+  }
+  
+  .hrz-transport-form label {
+    display: inline-block;
+    width: 200px;
+    font-weight: bold;
+  }
+  
+  .hrz-transport-form em.info {
+    display: block;
+    margin-left: 205px;
+    color: #666;
+    font-size: 0.9em;
+  }
+  
+  .info-box {
+    background: #e8f4ff;
+    border: 1px solid #b3d9ff;
+    padding: 10px;
+    margin: 15px 0;
+  }
+  
+  .hrz-comparison-table {
+    width: 100%;
+    margin-top: 15px;
+  }
+  
+  .hrz-comparison-table th {
+    background: #e8f4ff;
+    font-weight: bold;
+    padding: 8px;
+    border: 1px solid #ccc;
+  }
+  
+  .hrz-comparison-table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    vertical-align: top;
+  }
+  
+  .hrz-comparison-table tr.identical {
+    background: #f0fff0;
+  }
+  
+  .hrz-comparison-table tr.different {
+    background: #fff8e8;
+  }
+  
+  .hrz-comparison-table .status-column {
+    text-align: center;
+    width: 60px;
+  }
+  
+  .hrz-comparison-table .transport-column {
+    text-align: center;
+    width: 80px;
+  }
+  
+  .hrz-comparison-table .field-name {
+    font-weight: bold;
+  }
+  
+  .hrz-comparison-table .customized-type {
+    color: #666;
+    font-style: italic;
+  }
+  
+  .hrz-comparison-table .icon-ok {
+    color: #28a745;
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+  
+  .hrz-comparison-table .icon-not-ok {
+    color: #ffc107;
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+  
+  .hrz-comparison-table .difference-item {
+    margin: 5px 0;
+  }
+  
+  .hrz-comparison-table .difference-item strong {
+    display: block;
+    color: #555;
+  }
+  
+  .hrz-comparison-table .difference-item .value {
+    display: block;
+    padding: 2px 5px;
+    background: #f5f5f5;
+    border-left: 3px solid #4CAF50;
+    margin-top: 2px;
+  }
+  
+  .hrz-comparison-table .no-differences {
+    color: #999;
+  }
+  
+  .hrz-comparison-table .not-exists {
+    color: #999;
+    font-style: italic;
+  }
+  
+  .transport-arrow {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    background-color: #2196F3;
+    color: white;
+    text-align: center;
+    line-height: 40px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+  }
+  
+  .transport-arrow:hover {
+    background-color: #1976D2;
+  }
+  
+  .transport-arrow.local_to_target::before {
+    content: '→';
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  .transport-arrow.target_to_local::before {
+    content: '←';
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  .button-primary {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .button-primary:hover {
+    background-color: #218838;
+  }
+</style>
