@@ -26,6 +26,9 @@ Redmine::Plugin.register :hrz_transport do
   author_url ''
   requires_redmine version_or_higher: '6.1.0'
 
+  # Uses methods from the library plugin hrz_lib:
+  requires_redmine_plugin :hrz_lib, version_or_higher: '0.4.0'
+
   # Add settings with default values
   settings default: {
     'transport_target_url' => ''
