@@ -17,8 +17,8 @@
 
 require 'json'
 
-module HrzLib
-  module TransportHelper
+module HrzTransport
+  class TransportHelper
     
     # Get the base URL of the target Redmine instance.
     # @return [String, nil] ... Redmine base URL. nil, if unknown.
@@ -467,5 +467,5 @@ module HrzLib
       end
     end  # add_documentation_note
     
-  end  # module TransportHelper
-end  # module HrzLib
+  end  # class TransportHelper
+end  # module HrzTransport

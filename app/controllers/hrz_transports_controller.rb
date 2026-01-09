@@ -29,7 +29,7 @@ class HrzTransportsController < ApplicationController
     @doc_issue_target = params[:doc_issue_target]
     
     # Get target URL from settings
-    @target_url = Setting.plugin_hrz_lib['transport_target_url']
+    @target_url = TransportHelper.get_target_base_url()
     
     Rails.logger.info "HRZ Transport: index action called"
     Rails.logger.info "HRZ Transport: Target URL: #{@target_url}"
@@ -70,7 +70,7 @@ class HrzTransportsController < ApplicationController
     
     Rails.logger.info "HRZ Transport: Executing transport for field ##{field_id} in direction #{direction}"
     
-    result = HrzLib::TransportHelper.execute_transport(
+    result = HrzTransport::TransportHelper.execute_transport(
       field_id,
       direction,
       User.current.api_key,
@@ -98,7 +98,7 @@ class HrzTransportsController < ApplicationController
   # Tests the connection to the target instance
   def test_connection
     begin
-      info = HrzLib::TransportHelper.fetch_target_instance_info(User.current.api_key)
+      info = HrzTransport::TransportHelper.fetch_target_instance_info(User.current.api_key)
       
       if info
         @target_instance_name = info[:app_title]
@@ -135,7 +135,7 @@ class HrzTransportsController < ApplicationController
       
       # Get target custom fields
       Rails.logger.info "HRZ Transport: Fetching target custom fields..."
-      @target_fields = HrzLib::TransportHelper.fetch_target_custom_fields(
+      @target_fields = HrzTransport::TransportHelper.fetch_target_custom_fields(
         User.current.api_key
       )
       
@@ -149,7 +149,7 @@ class HrzTransportsController < ApplicationController
       
       # Compare fields
       Rails.logger.info "HRZ Transport: Comparing fields..."
-      @comparison_results = HrzLib::TransportHelper.compare_custom_fields(
+      @comparison_results = HrzTransport::TransportHelper.compare_custom_fields(
         @local_fields,
         @target_fields
       )
