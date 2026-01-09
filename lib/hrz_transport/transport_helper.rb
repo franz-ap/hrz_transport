@@ -15,52 +15,47 @@
 #-------------------------------------------------------------------------------------eohdr-#
 # Purpose: Helper module for transporting custom field definitions between Redmine instances.
 
-require 'net/http'
 require 'json'
-require 'uri'
 
 module HrzLib
   module TransportHelper
     
+    # Get the base URL of the target Redmine instance.
+    # @return [String, nil] ... Redmine base URL. nil, if unknown.
+    def get_target_base_url
+      b_target_url = Setting.plugin_hrz_transport['transport_target_url']
+      return nil   if b_target_url.nil? || b_target_url.blank?
+      # Normalize URL (remove trailing slash if present)
+      b_target_url = b_target_url.chomp('/')
+    end  # get_target_base_url
+
+
+
     # Fetches instance information from target instance
-    #
     # @param api_key [String] API key for authentication
-    #
     # @return [Hash, nil] Instance info hash, or nil on error
     def self.fetch_target_instance_info(api_key)
       begin
-        target_url = Setting.plugin_hrz_lib['transport_target_url']
-        return nil if target_url.blank?
-        
-        # Normalize URL (remove trailing slash if present)
-        target_url = target_url.chomp('/')
-        
-        uri = URI("#{target_url}/hrz_custom_fields/instance_info.json")
-        
-        Rails.logger.info "HRZ Transport: Fetching instance info from #{uri}"
-        
-        request = Net::HTTP::Get.new(uri)
-        request['X-Redmine-API-Key'] = api_key
-        request['Content-Type'] = 'application/json'
-        
-        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
-          http.request(request)
-        end
-        
-        Rails.logger.info "HRZ Transport: Response code: #{response.code}"
-        
-        if response.code.to_i == 200
-          data = JSON.parse(response.body)
-          Rails.logger.info "HRZ Transport: Successfully fetched instance info: #{data['instance_info']['app_title']}"
+        b_target_url = get_target_base_url()
+        return nil   if b_target_url.nil? || b_target_url.blank?
+
+        hsh_res = HrzLib::HrzHttp.http_request(b_target_url + '/hrz_custom_fields/instance_info.json',
+                                               'GET',
+                                               [{key: 'X-Redmine-API-Key', val: api_key},
+                                                {key: 'Content-Type',      val: 'application/json'}
+                                               ],
+                                               nil,
+                                               'target_instance_info')
+        if hsh_res[:q_ok]
+          data = JSON.parse(hsh_res[:body])
           return data['instance_info'].deep_symbolize_keys
         else
-          Rails.logger.error "HRZ Transport: Failed to fetch instance info. Status: #{response.code}, Body: #{response.body}"
+          # Error already reported. # Rails.logger.error "HRZ Transport: Failed to fetch instance info. Status: #{response.code}, Body: #{response.body}"
           return nil
         end
-        
       rescue => e
-        Rails.logger.error "HRZ Transport: Error fetching instance info: #{e.message}"
-        Rails.logger.error e.backtrace.join("\n")
+        HrzLogger.error_msg "HRZ TransportHelper.fetch_target_instance_info: Error fetching instance info: #{e.message}"
+        HrzLogger.error_msg e.backtrace.join("\n")
         return nil
       end
     end  # fetch_target_instance_info
@@ -68,9 +63,7 @@ module HrzLib
     
     
     # Fetches custom fields from target instance
-    #
     # @param api_key [String] API key for authentication
-    #
     # @return [Array<Hash>, nil] Array of custom field hashes, or nil on error
     def self.fetch_target_custom_fields(api_key)
       begin

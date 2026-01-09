@@ -18,16 +18,16 @@
 require 'redmine'
 
 Redmine::Plugin.register :hrz_transport do
-  name 'HRZ Transport'
-  author 'Franz Apeltauer, Claude'
+  name        'HRZ Transport'
+  author      'Franz Apeltauer, Claude'
   description 'Redmine transport utility plugin for developers/admins. It helps you to compare Custom fields in two different Redmine instances and to copy them from/to the other instance.'
-  version '0.4.1'
-  url '' #'https://github.com/franz-ap/hrz_lib'
+  version     '0.6.2'
+  url         'https://github.com/franz-ap/hrz_transport'
   author_url ''
   requires_redmine version_or_higher: '6.1.0'
 
   # Uses methods from the library plugin hrz_lib:
-  requires_redmine_plugin :hrz_lib, version_or_higher: '0.4.0'
+  requires_redmine_plugin :hrz_lib, version_or_higher: '0.5.0'
 
   # Add settings with default values
   settings default: {
