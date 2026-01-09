@@ -45,7 +45,7 @@ module HrzLib
                                                 {key: 'Content-Type',      val: 'application/json'}
                                                ],
                                                nil,
-                                               'target_instance_info')
+                                               'fetch_target_instance_info')
         if hsh_res[:q_ok]
           data = JSON.parse(hsh_res[:body])
           return data['instance_info'].deep_symbolize_keys
@@ -67,39 +67,28 @@ module HrzLib
     # @return [Array<Hash>, nil] Array of custom field hashes, or nil on error
     def self.fetch_target_custom_fields(api_key)
       begin
-        target_url = Setting.plugin_hrz_lib['transport_target_url']
-        return nil if target_url.blank?
+        b_target_url = get_target_base_url()
+        return nil   if b_target_url.nil? || b_target_url.blank?
         
-        # Normalize URL (remove trailing slash if present)
-        target_url = target_url.chomp('/')
-        
-        uri = URI("#{target_url}/hrz_custom_fields.json")
-        
-        Rails.logger.info "HRZ Transport: Fetching custom fields from #{uri}"
-        
-        request = Net::HTTP::Get.new(uri)
-        request['X-Redmine-API-Key'] = api_key
-        request['Content-Type'] = 'application/json'
-        
-        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
-          http.request(request)
-        end
-        
-        Rails.logger.info "HRZ Transport: Response code: #{response.code}"
-        
-        if response.code.to_i == 200
-          data = JSON.parse(response.body)
+        hsh_res = HrzLib::HrzHttp.http_request(b_target_url + '/hrz_custom_fields.json',
+                                               'GET',
+                                               [{key: 'X-Redmine-API-Key', val: api_key},
+                                                {key: 'Content-Type',      val: 'application/json'}
+                                               ],
+                                               nil,
+                                               'fetch_target_custom_fields')
+        if hsh_res[:q_ok]
+          data = JSON.parse(hsh_res[:body])
           fields_count = data['custom_fields'].length
-          Rails.logger.info "HRZ Transport: Successfully fetched #{fields_count} custom fields"
+          HrzLogger.debug_msg "HRZ TransportHelper.fetch_target_custom_fields: Successfully fetched #{fields_count} custom fields"
           return data['custom_fields'].map(&:deep_symbolize_keys)
         else
-          Rails.logger.error "HRZ Transport: Failed to fetch target fields. Status: #{response.code}, Body: #{response.body}"
+          # Error already reported. #Rails.logger.error "HRZ TransportHelper.fetch_target_custom_fields: Failed to fetch target fields. Status: #{response.code}, Body: #{response.body}"
           return nil
         end
-        
       rescue => e
-        Rails.logger.error "HRZ Transport: Error fetching target fields: #{e.message}"
-        Rails.logger.error e.backtrace.join("\n")
+        HrzLogger.error_msg "HRZ TransportHelper.fetch_target_custom_field: Error fetching target fields: #{e.message}"
+        HrzLogger.error_msg e.backtrace.join("\n")
         return nil
       end
     end  # fetch_target_custom_fields
@@ -107,40 +96,31 @@ module HrzLib
     
     
     # Fetches detailed information about a specific custom field from target instance
-    #
     # @param field_id [Integer] The ID of the custom field
     # @param api_key [String] API key for authentication
-    #
     # @return [Hash, nil] Custom field details, or nil on error
     def self.fetch_target_field_details(field_id, api_key)
       begin
-        target_url = Setting.plugin_hrz_lib['transport_target_url']
-        return nil if target_url.blank?
-        
-        target_url = target_url.chomp('/')
-        uri = URI("#{target_url}/hrz_custom_fields/#{field_id}.json")
-        
-        Rails.logger.info "HRZ Transport: Fetching field details for field ##{field_id} from #{uri}"
-        
-        request = Net::HTTP::Get.new(uri)
-        request['X-Redmine-API-Key'] = api_key
-        request['Content-Type'] = 'application/json'
-        
-        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
-          http.request(request)
-        end
-        
-        if response.code.to_i == 200
-          data = JSON.parse(response.body)
-          Rails.logger.info "HRZ Transport: Successfully fetched field details for ##{field_id}"
+        b_target_url = get_target_base_url()
+        return nil   if b_target_url.nil? || b_target_url.blank?
+
+        hsh_res = HrzLib::HrzHttp.http_request(b_target_url + "/hrz_custom_fields/#{field_id}.json",
+                                               'GET',
+                                               [{key: 'X-Redmine-API-Key', val: api_key},
+                                                {key: 'Content-Type',      val: 'application/json'}
+                                               ],
+                                               nil,
+                                               'fetch_target_custom_fields')
+        if hsh_res[:q_ok]
+          data = JSON.parse(hsh_res[:body])
+          # Rails.logger.info "HRZ Transport: Successfully fetched field details for ##{field_id}"
           return data['custom_field'].deep_symbolize_keys
         else
-          Rails.logger.error "HRZ Transport: Failed to fetch field details. Status: #{response.code}"
+          # Error already reported. #Rails.logger.error "HRZ Transport: Failed to fetch field details. Status: #{response.code}"
           return nil
         end
-        
       rescue => e
-        Rails.logger.error "HRZ Transport: Error fetching target field details: #{e.message}"
+        HrzLogger.error_msg "HRZ TransportHelper.fetch_target_field_details: Error fetching target field ##{field_id} details: #{e.message}"
         return nil
       end
     end  # fetch_target_field_details
@@ -330,7 +310,7 @@ module HrzLib
         local_field = CustomFieldHelper.get_custom_field(local_field_id)
         return {success: false, error: 'Local field not found'} if local_field.nil?
         
-        target_url = Setting.plugin_hrz_lib['transport_target_url']
+        target_url = get_target_base_url()
         return {success: false, error: 'Target URL not configured'} if target_url.blank?
         
         target_url = target_url.chomp('/')
@@ -460,7 +440,7 @@ module HrzLib
           HrzLib::IssueHelper.add_comment(issue_id.to_i, note_text)
         elsif location == 'target' && api_key
           # Add note to target issue via API
-          target_url = Setting.plugin_hrz_lib['transport_target_url']
+          target_url = get_target_base_url()
           return if target_url.blank?
           
           target_url = target_url.chomp('/')
