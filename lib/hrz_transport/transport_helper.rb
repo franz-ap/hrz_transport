@@ -22,7 +22,7 @@ module HrzTransport
     
     # Get the base URL of the target Redmine instance.
     # @return [String, nil] ... Redmine base URL. nil, if unknown.
-    def get_target_base_url
+    def self.get_target_base_url
       b_target_url = Setting.plugin_hrz_transport['transport_target_url']
       return nil   if b_target_url.nil? || b_target_url.blank?
       # Normalize URL (remove trailing slash if present)
@@ -188,7 +188,7 @@ module HrzTransport
       identical = true
       
       # Get detailed information for comparison
-      local_details = CustomFieldHelper.get_custom_field(local_field[:id])
+      local_details = HrzLib::CustomFieldHelper.get_custom_field(local_field[:id])
       
       # Compare name
       if local_details[:name] != target_field[:name]
@@ -307,7 +307,7 @@ module HrzTransport
     def self.transport_local_to_target(local_field_id, api_key)
       begin
         # Get local field details
-        local_field = CustomFieldHelper.get_custom_field(local_field_id)
+        local_field = HrzLib::CustomFieldHelper.get_custom_field(local_field_id)
         return {success: false, error: 'Local field not found'} if local_field.nil?
         
         target_url = get_target_base_url()
@@ -368,7 +368,7 @@ module HrzTransport
     def self.transport_target_to_local(local_field_id, api_key)
       begin
         # Get local field to identify which field to fetch from target
-        local_field = CustomFieldHelper.get_custom_field(local_field_id)
+        local_field = HrzLib::CustomFieldHelper.get_custom_field(local_field_id)
         return {success: false, error: 'Local field not found'} if local_field.nil?
         
         # Find matching field in target
@@ -388,7 +388,7 @@ module HrzTransport
         field_data = prepare_field_data_for_transport(target_field)
         
         # Update local field
-        success = CustomFieldHelper.update_custom_field(local_field_id, field_data)
+        success = HrzLib::CustomFieldHelper.update_custom_field(local_field_id, field_data)
         
         if success
           message = "Updated custom field '#{local_field[:name]}' from target instance"

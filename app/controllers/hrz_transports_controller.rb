@@ -29,16 +29,12 @@ class HrzTransportsController < ApplicationController
     @doc_issue_target = params[:doc_issue_target]
     
     # Get target URL from settings
-    @target_url = TransportHelper.get_target_base_url()
-    
-    Rails.logger.info "HRZ Transport: index action called"
-    Rails.logger.info "HRZ Transport: Target URL: #{@target_url}"
-    Rails.logger.info "HRZ Transport: Comparison scope: #{@comparison_scope}"
-    Rails.logger.info "HRZ Transport: Selected project: #{@selected_project_id}"
+    @target_url = HrzTransport::TransportHelper.get_target_base_url()
+    HrzLib::HrzLogger.debug_msg "HRZ Transport: index action called. Target URL: #{@target_url} Comparison scope: #{@comparison_scope} Selected project: #{@selected_project_id}"
     
     if @target_url.blank?
       flash.now[:warning] = l(:warning_hrz_no_target_url)
-      Rails.logger.warn "HRZ Transport: No target URL configured"
+      HrzLib::HrzLogger.warning_msg "HRZ Transport: No target URL configured"
       return
     end
     
@@ -47,19 +43,18 @@ class HrzTransportsController < ApplicationController
     
     # Perform comparison automatically if scope is 'all' OR if project is selected
     if @comparison_scope == 'all'
-      Rails.logger.info "HRZ Transport: Performing comparison for all fields"
       perform_comparison
     elsif @comparison_scope == 'project' && @selected_project_id.present?
-      Rails.logger.info "HRZ Transport: Performing comparison for project #{@selected_project_id}"
       perform_comparison
     else
-      Rails.logger.info "HRZ Transport: No comparison performed (waiting for project selection)"
+      #Rails.logger.info "HRZ Transport: No comparison performed (waiting for project selection)"
     end
     
-    Rails.logger.info "HRZ Transport: @comparison_results present? #{@comparison_results.present?}"
-    Rails.logger.info "HRZ Transport: @comparison_results count: #{@comparison_results&.length || 0}"
+    HrzLib::HrzLogger.debug_msg "HRZ Transport: @comparison_results present? #{@comparison_results.present?}   @comparison_results count: #{@comparison_results&.length || 0}"
   end
   
+
+
   # POST /hrz_transports/execute
   # Executes a transport operation for a specific custom field
   def execute
@@ -68,7 +63,7 @@ class HrzTransportsController < ApplicationController
     doc_issue_local = params[:doc_issue_local]
     doc_issue_target = params[:doc_issue_target]
     
-    Rails.logger.info "HRZ Transport: Executing transport for field ##{field_id} in direction #{direction}"
+    HrzLib::HrzLogger.debug_msg "HRZ Transport: Executing transport for field ##{field_id} in direction #{direction}"
     
     result = HrzTransport::TransportHelper.execute_transport(
       field_id,
@@ -95,6 +90,8 @@ class HrzTransportsController < ApplicationController
   
   private
   
+
+
   # Tests the connection to the target instance
   def test_connection
     begin
@@ -105,56 +102,55 @@ class HrzTransportsController < ApplicationController
         @target_redmine_version = info[:redmine_version]
         @target_connection_ok = true
         flash.now[:notice] = "Connected to target instance: #{@target_instance_name} (Redmine #{@target_redmine_version})"
-        Rails.logger.info "HRZ Transport: Successfully connected to target: #{@target_instance_name}"
+        HrzLib::HrzLogger.debug_msg "HRZ Transport: Successfully connected to target: #{@target_instance_name}"
       else
         @target_connection_ok = false
         flash.now[:error] = l(:error_hrz_cannot_connect_to_target)
-        Rails.logger.error "HRZ Transport: Cannot connect to target instance"
+        HrzLib::HrzLogger.error_msg "HRZ Transport: Cannot connect to target instance"
       end
     rescue => e
       @target_connection_ok = false
       flash.now[:error] = l(:error_hrz_connection_failed, error: e.message)
-      Rails.logger.error "HRZ Transport: Connection test failed: #{e.message}"
+      HrzLib::HrzLogger.error_msg "HRZ Transport: Connection test failed: #{e.message}"
     end
   end
   
   # Performs the comparison between local and target custom fields
   def perform_comparison
     begin
-      Rails.logger.info "HRZ Transport: Starting comparison..."
+      HrzLib::HrzLogger.debug_msg "HRZ Transport: Starting comparison..."
       
       # Get local custom fields
       if @comparison_scope == 'all'
         @local_fields = HrzLib::CustomFieldHelper.list_custom_fields
-        Rails.logger.info "HRZ Transport: Found #{@local_fields.length} local custom fields (all)"
+        HrzLib::HrzLogger.debug_msg "HRZ Transport: Found #{@local_fields.length} local custom fields (all)"
       else
         project = Project.find(@selected_project_id)
         @local_fields = get_project_custom_fields(project)
-        Rails.logger.info "HRZ Transport: Found #{@local_fields.length} local custom fields for project #{project.name}"
+        HrzLib::HrzLogger.debug_msg "HRZ Transport: Found #{@local_fields.length} local custom fields for project #{project.name}"
       end
       
       # Get target custom fields
-      Rails.logger.info "HRZ Transport: Fetching target custom fields..."
+      HrzLib::HrzLogger.debug_msg "HRZ Transport: Fetching target custom fields..."
       @target_fields = HrzTransport::TransportHelper.fetch_target_custom_fields(
         User.current.api_key
       )
       
       if @target_fields.nil?
         flash.now[:error] = l(:error_hrz_cannot_fetch_target_fields)
-        Rails.logger.error "HRZ Transport: Failed to fetch target fields"
+        HrzLib::HrzLogger.error_msg "HRZ Transport: Failed to fetch target fields"
         return
       end
       
-      Rails.logger.info "HRZ Transport: Found #{@target_fields.length} target custom fields"
+      HrzLib::HrzLogger.debug_msg "HRZ Transport: Found #{@target_fields.length} target custom fields.  Comparing ..."
       
       # Compare fields
-      Rails.logger.info "HRZ Transport: Comparing fields..."
       @comparison_results = HrzTransport::TransportHelper.compare_custom_fields(
         @local_fields,
         @target_fields
       )
       
-      Rails.logger.info "HRZ Transport: Comparison complete. Results: #{@comparison_results.length} fields"
+      HrzLib::HrzLogger.debug_msg "HRZ Transport: Comparison complete. Results: #{@comparison_results.length} fields"
       
       if @comparison_results.empty?
         flash.now[:warning] = l(:warning_hrz_no_fields_to_compare)
@@ -162,11 +158,11 @@ class HrzTransportsController < ApplicationController
       
     rescue ActiveRecord::RecordNotFound
       flash.now[:error] = l(:error_project_not_found)
-      Rails.logger.error "HRZ Transport: Project not found"
+      HrzLib::HrzLogger.error_msg "HRZ Transport: Project not found"
     rescue => e
       flash.now[:error] = l(:error_hrz_comparison_failed, error: e.message)
-      Rails.logger.error "HRZ Transport: Comparison failed: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
+      HrzLib::HrzLogger.error_msg "HRZ Transport: Comparison failed: #{e.message}"
+      HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
     end
   end
   
