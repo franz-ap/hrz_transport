@@ -54,8 +54,8 @@ module HrzTransport
           return nil
         end
       rescue => e
-        HrzLogger.error_msg "HRZ TransportHelper.fetch_target_instance_info: Error fetching instance info: #{e.message}"
-        HrzLogger.error_msg e.backtrace.join("\n")
+        HrzLib::HrzLogger.error_msg "HRZ TransportHelper.fetch_target_instance_info: Error fetching instance info: #{e.message}"
+        HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
         return nil
       end
     end  # fetch_target_instance_info
@@ -80,15 +80,15 @@ module HrzTransport
         if hsh_res[:q_ok]
           data = JSON.parse(hsh_res[:body])
           fields_count = data['custom_fields'].length
-          HrzLogger.debug_msg "HRZ TransportHelper.fetch_target_custom_fields: Successfully fetched #{fields_count} custom fields"
+          HrzLib::HrzLogger.debug_msg "HRZ TransportHelper.fetch_target_custom_fields: Successfully fetched #{fields_count} custom fields"
           return data['custom_fields'].map(&:deep_symbolize_keys)
         else
           # Error already reported. #Rails.logger.error "HRZ TransportHelper.fetch_target_custom_fields: Failed to fetch target fields. Status: #{response.code}, Body: #{response.body}"
           return nil
         end
       rescue => e
-        HrzLogger.error_msg "HRZ TransportHelper.fetch_target_custom_field: Error fetching target fields: #{e.message}"
-        HrzLogger.error_msg e.backtrace.join("\n")
+        HrzLib::HrzLogger.error_msg "HRZ TransportHelper.fetch_target_custom_field: Error fetching target fields: #{e.message}"
+        HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
         return nil
       end
     end  # fetch_target_custom_fields
@@ -120,7 +120,7 @@ module HrzTransport
           return nil
         end
       rescue => e
-        HrzLogger.error_msg "HRZ TransportHelper.fetch_target_field_details: Error fetching target field ##{field_id} details: #{e.message}"
+        HrzLib::HrzLogger.error_msg "HRZ TransportHelper.fetch_target_field_details: Error fetching target field ##{field_id} details: #{e.message}"
         return nil
       end
     end  # fetch_target_field_details

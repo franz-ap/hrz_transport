@@ -21,7 +21,7 @@ Redmine::Plugin.register :hrz_transport do
   name        'HRZ Transport'
   author      'Franz Apeltauer, Claude'
   description 'Redmine transport utility plugin for developers/admins. It helps you to compare Custom fields in two different Redmine instances and to copy them from/to the other instance.'
-  version     '0.6.5'
+  version     '0.6.6'
   url         'https://github.com/franz-ap/hrz_transport'
   author_url ''
   requires_redmine version_or_higher: '6.1.0'

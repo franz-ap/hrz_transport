@@ -28,6 +28,7 @@ class HrzTransportsController < ApplicationController
     @doc_issue_local = params[:doc_issue_local]
     @doc_issue_target = params[:doc_issue_target]
     
+    HrzLib::HrzLogger.debug_enable(true)
     # Get target URL from settings
     @target_url = HrzTransport::TransportHelper.get_target_base_url()
     HrzLib::HrzLogger.debug_msg "HRZ Transport: index action called. Target URL: #{@target_url} Comparison scope: #{@comparison_scope} Selected project: #{@selected_project_id}"
