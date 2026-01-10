@@ -85,6 +85,6 @@ en:
   error_hrz_comparison_failed: "Comparison failed: %{error}"
   error_project_not_found: "Project not found."
   
-  button_compare: "Compare"
+  button_compare: "Compare now"
   label_configure: "Configure"
   label_please_select: "Please select"
