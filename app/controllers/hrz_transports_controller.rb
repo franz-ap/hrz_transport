@@ -47,12 +47,12 @@ class HrzTransportsController < ApplicationController
       perform_comparison
     elsif @comparison_scope == 'project' && @selected_project_id.present?
       perform_comparison
-    else
+    #else
       #Rails.logger.info "HRZ Transport: No comparison performed (waiting for project selection)"
     end
     
     HrzLib::HrzLogger.debug_msg "HRZ Transport: @comparison_results present? #{@comparison_results.present?}   @comparison_results count: #{@comparison_results&.length || 0}"
-  end
+  end  # index
   
 
 
@@ -87,7 +87,7 @@ class HrzTransportsController < ApplicationController
       doc_issue_local: doc_issue_local,
       doc_issue_target: doc_issue_target
     )
-  end
+  end  # execute
   
   private
   
@@ -114,7 +114,9 @@ class HrzTransportsController < ApplicationController
       flash.now[:error] = l(:error_hrz_connection_failed, error: e.message)
       HrzLib::HrzLogger.error_msg "HRZ Transport: Connection test failed: #{e.message}"
     end
-  end
+  end  # test_connection
+
+
   
   # Performs the comparison between local and target custom fields
   def perform_comparison
@@ -151,7 +153,7 @@ class HrzTransportsController < ApplicationController
         @target_fields
       )
       
-      HrzLib::HrzLogger.debug_msg "HRZ Transport: Comparison complete. Results: #{@comparison_results.length} fields"
+      HrzLib::HrzLogger.debug_msg "HRZ Transport: Comparison complete. Results: #{@comparison_results.length} comparison results for fields"
       
       if @comparison_results.empty?
         flash.now[:warning] = l(:warning_hrz_no_fields_to_compare)
@@ -162,11 +164,13 @@ class HrzTransportsController < ApplicationController
       HrzLib::HrzLogger.error_msg "HRZ Transport: Project not found"
     rescue => e
       flash.now[:error] = l(:error_hrz_comparison_failed, error: e.message)
-      HrzLib::HrzLogger.error_msg "HRZ Transport: Comparison failed: #{e.message}"
+      HrzLib::HrzLogger.error_msg "HRZ Transport.perform_comparison: Comparison failed: #{e.message}"
       HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
     end
-  end
+  end  # perform_comparison
   
+
+
   # Gets custom fields used in a specific project
   # Returns array of custom field hashes
   def get_project_custom_fields(project)
@@ -205,5 +209,5 @@ class HrzTransportsController < ApplicationController
     end
     
     fields
-  end
-end
+  end  # get_project_custom_fields
+end  # class HrzTransportsController

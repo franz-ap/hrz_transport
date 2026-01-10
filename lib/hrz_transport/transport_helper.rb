@@ -130,7 +130,7 @@ module HrzTransport
     def self.compare_custom_fields(local_fields, target_fields)
       results = []
       
-      Rails.logger.info "HRZ Transport: Comparing #{local_fields.length} local fields with #{target_fields.length} target fields"
+      Rails.logger.info "HRZ Transport.compare_custom_fields: Comparing #{local_fields.length} local fields with #{target_fields.length} target fields"
       
       local_fields.each do |local_field|
         # Find matching field in target by name and type
@@ -179,6 +179,9 @@ module HrzTransport
     #
     # @return [Boolean] true if fields are identical
     def self.compare_field_properties(local_field, target_field, differences)
+      HrzLib::HrzLogger.debug_msg "compare_field_properties: local_field=" + local_field.inspect
+      HrzLib::HrzLogger.debug_msg "   target_field=" + target_field.inspect
+
       identical = true
       
       # Get detailed information for comparison
