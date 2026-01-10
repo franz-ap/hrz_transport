@@ -427,7 +427,7 @@ module HrzTransport
                                                  'add_documentation_note' )
           if hsh_res[:q_ok]
             HrzLib::HrzLogger.info_msg "Added documentation note to #{location} issue ##{issue_id}"
-          en
+          end
       rescue => e
         HrzLib::HrzLogger.error_msg "HRZ TransportHelper.add_documentation_note: Failed to add #{location} documentation note: #{e.message}"
         HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
