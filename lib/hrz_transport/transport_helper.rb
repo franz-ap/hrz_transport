@@ -41,9 +41,7 @@ module HrzTransport
 
         hsh_res = HrzLib::HrzHttp.http_request(b_target_url + '/hrz_custom_fields/instance_info.json',
                                                'GET',
-                                               [{key: 'X-Redmine-API-Key', val: api_key},
-                                                {key: 'Content-Type',      val: 'application/json'}
-                                               ],
+                                               {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
                                                nil,
                                                'fetch_target_instance_info')
         if hsh_res[:q_ok]
@@ -72,9 +70,7 @@ module HrzTransport
         
         hsh_res = HrzLib::HrzHttp.http_request(b_target_url + '/hrz_custom_fields.json',
                                                'GET',
-                                               [{key: 'X-Redmine-API-Key', val: api_key},
-                                                {key: 'Content-Type',      val: 'application/json'}
-                                               ],
+                                               {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
                                                nil,
                                                'fetch_target_custom_fields')
         if hsh_res[:q_ok]
@@ -106,9 +102,7 @@ module HrzTransport
 
         hsh_res = HrzLib::HrzHttp.http_request(b_target_url + "/hrz_custom_fields/#{field_id}.json",
                                                'GET',
-                                               [{key: 'X-Redmine-API-Key', val: api_key},
-                                                {key: 'Content-Type',      val: 'application/json'}
-                                               ],
+                                               {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
                                                nil,
                                                'fetch_target_custom_fields')
         if hsh_res[:q_ok]
@@ -303,7 +297,7 @@ module HrzTransport
     # @param local_field_id [Integer] Local custom field ID
     # @param api_key [String] API key for authentication
     #
-    # @return [Hash] Result with :success, :field_name, :message, and :error keys
+    # @return [Boolean] true: ok, false: error/problems. Infos were already issued here inside.
     def self.transport_local_to_target(local_field_id, api_key)
       begin
         # Get local field details
@@ -312,8 +306,6 @@ module HrzTransport
         
         target_url = get_target_base_url()
         return {success: false, error: 'Target URL not configured'} if target_url.blank?
-        
-        target_url = target_url.chomp('/')
         
         # Check if field exists in target
         target_fields = fetch_target_custom_fields(api_key)
@@ -325,35 +317,21 @@ module HrzTransport
         # Prepare field data
         field_data = prepare_field_data_for_transport(local_field)
         
-        if target_field
-          # Update existing field
-          uri = URI("#{target_url}/hrz_custom_fields/#{target_field[:id]}.json")
-          request = Net::HTTP::Put.new(uri)
-          message = "Updated custom field '#{local_field[:name]}' in target instance"
-        else
-          # Create new field
-          uri = URI("#{target_url}/hrz_custom_fields.json")
-          request = Net::HTTP::Post.new(uri)
-          message = "Created custom field '#{local_field[:name]}' in target instance"
+        #                                                          Update existing field --V                     /  create a new field -V
+        hsh_res = HrzLib::HrzHttp.http_request(b_target_url +
+                                                  (target_field ? "/hrz_custom_fields/#{target_field[:id]}.json" : '/hrz_custom_fields.json'),
+                                               (target_field    ? 'PUT'                                          : 'POST'),
+                                               {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
+                                               {custom_field: field_data}.to_json,
+                                               'transport_local_to_target(' + (target_field ? 'Upd' : 'Cre') + "_CF '#{local_field[:name]}')",
+                                               [200, 201] )
+        if hsh_res[:q_ok]
+          HrzLib::HrzLogger.info_msg (target_field ? 'Updated' : 'Created') + " CustomField '#{local_field[:name]}' in target instance."
         end
-        
-        request['X-Redmine-API-Key'] = api_key
-        request['Content-Type'] = 'application/json'
-        request.body = {custom_field: field_data}.to_json
-        
-        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
-          http.request(request)
-        end
-        
-        if [200, 201].include?(response.code.to_i)
-          {success: true, field_name: local_field[:name], message: message}
-        else
-          error_msg = "HTTP #{response.code}: #{response.body}"
-          {success: false, field_name: local_field[:name], error: error_msg}
-        end
-        
+         hsh_res[:q_ok]
       rescue => e
-        {success: false, error: e.message}
+        HrzLib::HrzLogger.error_msg "HRZ TransportHelper.transport_local_to_target Error: #{e.message}"
+        HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
       end
     end  # transport_local_to_target
 
@@ -442,28 +420,17 @@ module HrzTransport
           # Add note to target issue via API
           target_url = get_target_base_url()
           return if target_url.blank?
-          
-          target_url = target_url.chomp('/')
-          uri = URI("#{target_url}/issues/#{issue_id}.json")
-          
-          request = Net::HTTP::Put.new(uri)
-          request['X-Redmine-API-Key'] = api_key
-          request['Content-Type'] = 'application/json'
-          request.body = {
-            issue: {
-              notes: note_text
-            }
-          }.to_json
-          
-          Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
-            http.request(request)
-          end
-        end
-        
-        Rails.logger.info "HRZ Transport: Added documentation note to #{location} issue ##{issue_id}"
-        
+          hsh_res = HrzLib::HrzHttp.http_request(b_target_url + "/issues/#{issue_id}.json",
+                                                 'PUT',
+                                                 {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
+                                                 { issue: { notes: note_text } }.to_json,
+                                                 'add_documentation_note' )
+          if hsh_res[:q_ok]
+            HrzLib::HrzLogger.info_msg "Added documentation note to #{location} issue ##{issue_id}"
+          en
       rescue => e
-        Rails.logger.error "HRZ Transport: Failed to add documentation note: #{e.message}"
+        HrzLib::HrzLogger.error_msg "HRZ TransportHelper.add_documentation_note: Failed to add #{location} documentation note: #{e.message}"
+        HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
       end
     end  # add_documentation_note
     
