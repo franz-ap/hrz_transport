@@ -413,21 +413,29 @@ module HrzTransport
         timestamp = Time.now.strftime('%Y-%m-%d %H:%M:%S')
         note_text = "[#{timestamp}] Custom Field Transport: #{message}"
         
+        q_ok = false
         if location == 'local'
           # Add note to local issue
-          HrzLib::IssueHelper.add_comment(issue_id.to_i, note_text)
+          if HrzLib::IssueHelper.add_comment(issue_id.to_i, note_text)
+             q_ok = true
+          end
         elsif location == 'target' && api_key
           # Add note to target issue via API
           target_url = get_target_base_url()
-          return if target_url.blank?
-          hsh_res = HrzLib::HrzHttp.http_request(b_target_url + "/issues/#{issue_id}.json",
-                                                 'PUT',
-                                                 {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
-                                                 { issue: { notes: note_text } }.to_json,
-                                                 'add_documentation_note' )
-          if hsh_res[:q_ok]
-            HrzLib::HrzLogger.info_msg "Added documentation note to #{location} issue ##{issue_id}"
+          if ! target_url.blank?
+            hsh_res = HrzLib::HrzHttp.http_request(b_target_url + "/issues/#{issue_id}.json",
+                                                  'PUT',
+                                                  {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
+                                                  { issue: { notes: note_text } }.to_json,
+                                                  'add_documentation_note' )
+            q_ok = hsh_res[:q_ok]
           end
+        else
+          HrzLib::HrzLogger.error_msg "HRZ TransportHelper.add_documentation_note: Invalid parameter location=#{location}."
+        end
+        if q_ok
+           HrzLib::HrzLogger.info_msg "Added documentation note to #{location} issue ##{issue_id}"
+        end
       rescue => e
         HrzLib::HrzLogger.error_msg "HRZ TransportHelper.add_documentation_note: Failed to add #{location} documentation note: #{e.message}"
         HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
