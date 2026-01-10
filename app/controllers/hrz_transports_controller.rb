@@ -18,41 +18,43 @@
 class HrzTransportsController < ApplicationController
   before_action :require_admin
   
-  # GET /hrz_transports
-  # Shows the transport comparison and execution page
-  def index
-    @projects = Project.all.order(:name)
-    @comparison_scope = params[:comparison_scope] || 'all'
-    @selected_project_id = params[:project_id]
-    @transport_direction = params[:transport_direction] || 'readonly'
-    @doc_issue_local = params[:doc_issue_local]
-    @doc_issue_target = params[:doc_issue_target]
-    
-    HrzLib::HrzLogger.debug_enable(true)
-    # Get target URL from settings
-    @target_url = HrzTransport::TransportHelper.get_target_base_url()
-    HrzLib::HrzLogger.debug_msg "HRZ Transport: index action called. Target URL: #{@target_url} Comparison scope: #{@comparison_scope} Selected project: #{@selected_project_id}"
-    
-    if @target_url.blank?
-      flash.now[:warning] = l(:warning_hrz_no_target_url)
-      HrzLib::HrzLogger.warning_msg "HRZ Transport: No target URL configured"
-      return
-    end
-    
-    # Test connection to target instance
-    test_connection
-    
-    # Perform comparison automatically if scope is 'all' OR if project is selected
+# GET /hrz_transports
+# Shows the transport comparison and execution page
+def index
+  @projects = Project.all.order(:name)
+  @comparison_scope = params[:comparison_scope] || 'all'
+  @selected_project_id = params[:project_id]
+  @transport_direction = params[:transport_direction] || 'readonly'
+  @doc_issue_local = params[:doc_issue_local]
+  @doc_issue_target = params[:doc_issue_target]
+
+  HrzLib::HrzLogger.debug_enable(true)
+  # Get target URL from settings
+  @target_url = HrzTransport::TransportHelper.get_target_base_url()
+  HrzLib::HrzLogger.debug_msg "HRZ Transport: index action called. Target URL: #{@target_url} Comparison scope: #{@comparison_scope} Selected project: #{@selected_project_id}"
+
+  if @target_url.blank?
+    flash.now[:warning] = l(:warning_hrz_no_target_url)
+    HrzLib::HrzLogger.warning_msg "HRZ Transport: No target URL configured"
+    return
+  end
+
+  # Test connection to target instance
+  test_connection
+
+  # Perform comparison only if explicitly requested via 'compare' parameter
+  if params[:compare].present?
     if @comparison_scope == 'all'
       perform_comparison
     elsif @comparison_scope == 'project' && @selected_project_id.present?
       perform_comparison
-    #else
-      #Rails.logger.info "HRZ Transport: No comparison performed (waiting for project selection)"
+    elsif @comparison_scope == 'project' && @selected_project_id.blank?
+      flash.now[:warning] = l(:notice_hrz_please_select_project)
     end
-    
-    HrzLib::HrzLogger.debug_msg "HRZ Transport: @comparison_results present? #{@comparison_results.present?}   @comparison_results count: #{@comparison_results&.length || 0}"
-  end  # index
+  end
+
+  HrzLib::HrzLogger.debug_msg "HRZ Transport: @comparison_results present? #{@comparison_results.present?}   @comparison_results count: #{@comparison_results&.length || 0}"
+end  # index
   
 
 
@@ -193,8 +195,8 @@ class HrzTransportsController < ApplicationController
       end
     end
     
-    # Get project custom fields
-    project.custom_fields.each do |cf|
+    # Get project custom fields that are enabled for this project
+    project.all_custom_fields.each do |cf|
       unless fields.any? { |f| f[:id] == cf.id }
         fields << {
           id: cf.id,

@@ -179,8 +179,8 @@ module HrzTransport
     #
     # @return [Boolean] true if fields are identical
     def self.compare_field_properties(local_field, target_field, differences)
-      HrzLib::HrzLogger.debug_msg "compare_field_properties: local_field=" + local_field.inspect
-      HrzLib::HrzLogger.debug_msg "   target_field=" + target_field.inspect
+      HrzLib::HrzLogger.debug_msg "compare_field_properties: loc=" + local_field.inspect
+      HrzLib::HrzLogger.debug_msg "                 target_field=" + target_field.inspect
 
       identical = true
       
@@ -253,7 +253,7 @@ module HrzTransport
           identical = false
         end
       end
-      
+      HrzLib::HrzLogger.debug_msg " --> differences=" + differences.inspect
       identical
     end  # compare_field_properties
     

@@ -27,7 +27,7 @@
 <%= form_tag(hrz_transports_path, method: :get, class: 'hrz-transport-form') do %>
   <fieldset class="box">
     <legend><%= l(:label_hrz_comparison_options) %></legend>
-    
+
     <p>
       <label><%= l(:label_hrz_comparison_scope) %></label>
       <%= select_tag 'comparison_scope',
@@ -37,17 +37,16 @@
                      ], @comparison_scope),
                      onchange: 'handleScopeChange(this)' %>
     </p>
-    
+
     <div id="project-selection" style="<%= @comparison_scope == 'all' ? 'display:none;' : '' %>">
       <p>
         <label><%= l(:label_project) %> <span class="required">*</span></label>
         <%= select_tag 'project_id',
                        options_from_collection_for_select(@projects, :id, :name, @selected_project_id),
-                       prompt: l(:label_please_select),
-                       onchange: 'this.form.submit()' %>
+                       prompt: l(:label_please_select) %>
       </p>
     </div>
-    
+
     <p>
       <label><%= l(:label_hrz_transport_direction) %></label>
       <%= select_tag 'transport_direction',
@@ -58,32 +57,37 @@
                      ], @transport_direction) %>
     </p>
   </fieldset>
-  
+
   <fieldset class="box">
     <legend><%= l(:label_hrz_documentation_issues) %></legend>
-    
+
     <p>
       <label><%= l(:label_hrz_doc_issue_local) %></label>
       <%= text_field_tag 'doc_issue_local', @doc_issue_local, size: 10, placeholder: '123' %>
       <em class="info"><%= l(:help_hrz_doc_issue) %></em>
     </p>
-    
+
     <p>
       <label><%= l(:label_hrz_doc_issue_target) %></label>
       <%= text_field_tag 'doc_issue_target', @doc_issue_target, size: 10, placeholder: '456' %>
       <em class="info"><%= l(:help_hrz_doc_issue) %></em>
     </p>
   </fieldset>
+
+  <p style="margin-top: 15px;">
+    <%= hidden_field_tag 'compare', '1' %>
+    <%= submit_tag l(:button_compare), class: 'button-primary' %>
+  </p>
 <% end %>
 
 <% if @comparison_results %>
   <h3><%= l(:label_hrz_comparison_results) %></h3>
-  
+
   <p class="info-box">
     <strong><%= l(:label_hrz_target_instance) %>:</strong> <%= @target_url %><br/>
     <strong><%= l(:label_hrz_fields_compared) %>:</strong> <%= @comparison_results.length %>
   </p>
-  
+
   <table class="list hrz-comparison-table">
     <thead>
       <tr>
@@ -125,7 +129,7 @@
           </td>
           <td class="transport-column">
             <% if @transport_direction != 'readonly' && !result[:is_identical] && result[:exists_in_target] %>
-              <%= link_to '', 
+              <%= link_to '',
                           hrz_transports_execute_path(
                             field_id: result[:local_id],
                             direction: @transport_direction,
@@ -161,10 +165,6 @@
       <% end %>
     </tbody>
   </table>
-<% elsif @comparison_scope == 'project' && @selected_project_id.blank? %>
-  <div class="flash notice">
-    <%= l(:notice_hrz_please_select_project) %>
-  </div>
 <% end %>
 
 <% end %>
@@ -176,8 +176,6 @@
       projectSelection.style.display = 'block';
     } else {
       projectSelection.style.display = 'none';
-      // Submit form immediately for 'all' scope
-      select.form.submit();
     }
   }
 </script>
@@ -186,97 +184,97 @@
   .hrz-transport-form fieldset {
     margin-bottom: 20px;
   }
-  
+
   .hrz-transport-form p {
     margin: 10px 0;
   }
-  
+
   .hrz-transport-form label {
     display: inline-block;
     width: 200px;
     font-weight: bold;
   }
-  
+
   .hrz-transport-form em.info {
     display: block;
     margin-left: 205px;
     color: #666;
     font-size: 0.9em;
   }
-  
+
   .info-box {
     background: #e8f4ff;
     border: 1px solid #b3d9ff;
     padding: 10px;
     margin: 15px 0;
   }
-  
+
   .hrz-comparison-table {
     width: 100%;
     margin-top: 15px;
   }
-  
+
   .hrz-comparison-table th {
     background: #e8f4ff;
     font-weight: bold;
     padding: 8px;
     border: 1px solid #ccc;
   }
-  
+
   .hrz-comparison-table td {
     padding: 8px;
     border: 1px solid #ddd;
     vertical-align: top;
   }
-  
+
   .hrz-comparison-table tr.identical {
     background: #f0fff0;
   }
-  
+
   .hrz-comparison-table tr.different {
     background: #fff8e8;
   }
-  
+
   .hrz-comparison-table .status-column {
     text-align: center;
     width: 60px;
   }
-  
+
   .hrz-comparison-table .transport-column {
     text-align: center;
     width: 80px;
   }
-  
+
   .hrz-comparison-table .field-name {
     font-weight: bold;
   }
-  
+
   .hrz-comparison-table .customized-type {
     color: #666;
     font-style: italic;
   }
-  
+
   .hrz-comparison-table .icon-ok {
     color: #28a745;
     font-size: 1.5em;
     font-weight: bold;
   }
-  
+
   .hrz-comparison-table .icon-not-ok {
     color: #ffc107;
     font-size: 1.5em;
     font-weight: bold;
   }
-  
+
   .hrz-comparison-table .difference-item {
     margin: 5px 0;
   }
-  
+
   .hrz-comparison-table .difference-item strong {
     display: block;
     color: #555;
   }
-  
+
   .hrz-comparison-table .difference-item .value {
     display: block;
     padding: 2px 5px;
@@ -284,16 +282,16 @@
     border-left: 3px solid #4CAF50;
     margin-top: 2px;
   }
-  
+
   .hrz-comparison-table .no-differences {
     color: #999;
   }
-  
+
   .hrz-comparison-table .not-exists {
     color: #999;
     font-style: italic;
   }
-  
+
   .transport-arrow {
     display: inline-block;
     width: 40px;
@@ -307,23 +305,23 @@
     text-decoration: none;
     position: relative;
   }
-  
+
   .transport-arrow:hover {
     background-color: #1976D2;
   }
-  
+
   .transport-arrow.local_to_target::before {
     content: '→';
     font-size: 24px;
     font-weight: bold;
   }
-  
+
   .transport-arrow.target_to_local::before {
     content: '←';
     font-size: 24px;
     font-weight: bold;
   }
-  
+
   .button-primary {
     background-color: #28a745;
     color: white;
@@ -333,7 +331,7 @@
     cursor: pointer;
     font-size: 14px;
   }
-  
+
   .button-primary:hover {
     background-color: #218838;
   }
