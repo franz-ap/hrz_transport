@@ -125,9 +125,10 @@ module HrzTransport
     #
     # @param local_fields [Array<Hash>] Local custom fields
     # @param target_fields [Array<Hash>] Target custom fields
+    # @param api_key [String] API key for authentication
     #
     # @return [Array<Hash>] Array of comparison results
-    def self.compare_custom_fields(local_fields, target_fields)
+    def self.compare_custom_fields(local_fields, target_fields, api_key)
       results = []
       
       Rails.logger.info "HRZ Transport.compare_custom_fields: Comparing #{local_fields.length} local fields with #{target_fields.length} target fields"
@@ -152,7 +153,7 @@ module HrzTransport
         
         if target_field
           # Compare field properties
-          comparison[:is_identical] = compare_field_properties(local_field, target_field, comparison[:differences])
+          comparison[:is_identical] = compare_field_properties(local_field, target_field, comparison[:differences], api_key)
         else
           comparison[:differences] << {
             property: 'existence',
@@ -171,90 +172,70 @@ module HrzTransport
     
     
 
+    # Compares 1 field property
+    # @param local_details  [Hash]    Local  field properties, detailed.
+    # @param target_details [Hash]    Target field properties, detailed.
+    # @param b_property     [String]  Property name to be compared.
+    # @param differences    [Array]   Array to collect differences
+    # @return               [Boolean] true if fields are identical, false otherwise.
+    def self.compare_1_field_property(local_details, target_details, b_property, differences)
+      q_ret = true
+      if b_property == 'possible_values'  &&  local_details[:field_format] == 'list'
+        loc = (local_details[b_property.to_sym]  || []).sort
+        trg = (target_details[b_property.to_sym] || []).sort
+      else
+        loc =  local_details[b_property.to_sym]
+        trg =  target_details[b_property.to_sym]
+      end
+      if loc != trg
+        if loc.is_a?(Array)
+          differences << {
+            property:     b_property,
+            local_value:  loc.join(', '),
+            target_value: trg.join(', ')
+          }
+        else
+          differences << {
+            property:     b_property,
+            local_value:  loc || '(none)',
+            target_value: trg || '(none)'
+          }
+        end
+        q_ret = false
+      end
+      q_ret
+    end  # compare_1_field_property
+
+
+
     # Compares properties of two custom fields
     #
     # @param local_field [Hash] Local field properties
     # @param target_field [Hash] Target field properties
     # @param differences [Array] Array to collect differences
+    # @param api_key [String] API key for authentication
     #
-    # @return [Boolean] true if fields are identical
-    def self.compare_field_properties(local_field, target_field, differences)
+    # @return [Boolean] true if fields are identical, false otherwise.
+    def self.compare_field_properties(local_field, target_field, differences, api_key)
       HrzLib::HrzLogger.debug_msg "compare_field_properties: loc=" + local_field.inspect
       HrzLib::HrzLogger.debug_msg "                 target_field=" + target_field.inspect
 
-      identical = true
+      q_identical = true
       
       # Get detailed information for comparison
-      local_details = HrzLib::CustomFieldHelper.get_custom_field(local_field[:id])
-      
-      # Compare name
-      if local_details[:name] != target_field[:name]
-        differences << {
-          property: 'name',
-          local_value: local_details[:name],
-          target_value: target_field[:name]
-        }
-        identical = false
-      end
-      
-      # Compare field format
-      if local_details[:field_format] != target_field[:field_format]
-        differences << {
-          property: 'field_format',
-          local_value: local_details[:field_format],
-          target_value: target_field[:field_format]
-        }
-        identical = false
-      end
-      
-      # Compare required status
-      if local_details[:is_required] != target_field[:is_required]
-        differences << {
-          property: 'is_required',
-          local_value: local_details[:is_required],
-          target_value: target_field[:is_required]
-        }
-        identical = false
-      end
-      
-      # Compare possible values for list fields
-      if local_details[:field_format] == 'list'
-        local_values = (local_details[:possible_values] || []).sort
-        target_values = (target_field[:possible_values] || []).sort
-        
-        if local_values != target_values
-          differences << {
-            property: 'possible_values',
-            local_value: local_values.join(', '),
-            target_value: target_values.join(', ')
-          }
-          identical = false
-        end
-      end
-      
-      # Compare default value
-      if local_details[:default_value] != target_field[:default_value]
-        differences << {
-          property: 'default_value',
-          local_value: local_details[:default_value] || '(none)',
-          target_value: target_field[:default_value] || '(none)'
-        }
-        identical = false
-      end
-      
-      # Compare formula for computed fields
-      if local_details[:formula] || target_field[:formula]
-        if local_details[:formula] != target_field[:formula]
-          differences << {
-            property: 'formula',
-            local_value: local_details[:formula] || '(none)',
-            target_value: target_field[:formula] || '(none)'
-          }
-          identical = false
-        end
-      end
+      local_details  = HrzLib::CustomFieldHelper.get_custom_field(local_field[:id])
+      target_details = fetch_target_field_details(target_field[:id], api_key)
+      HrzLib::HrzLogger.debug_msg "compare_field_properties/d: loc=" + local_details.inspect
+      HrzLib::HrzLogger.debug_msg "                   target_field=" + target_details.inspect
+
+      q_identical = compare_1_field_property(local_details, target_details, 'name',            differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'field_format',    differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'is_required',     differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'possible_values', differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'default_value',   differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'formula',         differences)  &&  q_identical
       HrzLib::HrzLogger.debug_msg " --> differences=" + differences.inspect
-      identical
+      q_identical
     end  # compare_field_properties
     
 

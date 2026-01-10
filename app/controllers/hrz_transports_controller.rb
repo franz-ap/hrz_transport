@@ -152,7 +152,8 @@ end  # index
       # Compare fields
       @comparison_results = HrzTransport::TransportHelper.compare_custom_fields(
         @local_fields,
-        @target_fields
+        @target_fields,
+        User.current.api_key
       )
       
       HrzLib::HrzLogger.debug_msg "HRZ Transport: Comparison complete. Results: #{@comparison_results.length} comparison results for fields"
@@ -176,6 +177,7 @@ end  # index
   # Gets custom fields used in a specific project
   # Returns array of custom field hashes
   def get_project_custom_fields(project)
+    HrzLib::HrzLogger.debug_msg 'get_project_custom_fields: project=' + project.inspect
     fields = []
     
     # Get issue custom fields for this project's trackers
@@ -194,9 +196,9 @@ end  # index
         end
       end
     end
-    
-    # Get project custom fields that are enabled for this project
-    project.all_custom_fields.each do |cf|
+
+    # Get project custom fields. Note: They are the same for all projects.
+    ProjectCustomField.all.each do |cf|
       unless fields.any? { |f| f[:id] == cf.id }
         fields << {
           id: cf.id,
@@ -209,7 +211,8 @@ end  # index
         }
       end
     end
-    
+
+    HrzLib::HrzLogger.debug_msg '  result: fields=' + fields.inspect
     fields
   end  # get_project_custom_fields
 end  # class HrzTransportsController
