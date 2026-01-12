@@ -245,6 +245,7 @@ module HrzTransport
       q_identical = compare_1_field_property(local_details, target_details, 'min_length',      differences)  &&  q_identical
       q_identical = compare_1_field_property(local_details, target_details, 'max_length',      differences)  &&  q_identical
       q_identical = compare_1_field_property(local_details, target_details, 'formula',         differences)  &&  q_identical
+      #TODO: link  display as radio/checkbox, used as a filter, roles, text formatting and Full width layout (for long text fields), trackers
       HrzLib::HrzLogger.debug_msg " --> differences=" + differences.inspect
       q_identical
     end  # compare_field_properties

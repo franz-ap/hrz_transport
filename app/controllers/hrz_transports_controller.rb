@@ -104,7 +104,7 @@ end  # index
         @target_instance_name = info[:app_title]
         @target_redmine_version = info[:redmine_version]
         @target_connection_ok = true
-        flash.now[:notice] = "Connected to target instance: #{@target_instance_name} (Redmine #{@target_redmine_version})"
+        flash.now[:notice] = "Connected to target instance '#{@target_instance_name}', Redmine version #{@target_redmine_version}, hrz_lib version: #{info[:plugin_version_hrz_lib]}"
         HrzLib::HrzLogger.debug_msg "HRZ Transport: Successfully connected to target: #{@target_instance_name}"
       else
         @target_connection_ok = false
