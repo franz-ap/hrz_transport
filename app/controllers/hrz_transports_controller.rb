@@ -153,6 +153,7 @@ end  # index
       @comparison_results = HrzTransport::TransportHelper.compare_custom_fields(
         @local_fields,
         @target_fields,
+        (@comparison_scope == 'all'),
         User.current.api_key
       )
       

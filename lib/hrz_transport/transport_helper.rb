@@ -127,16 +127,17 @@ module HrzTransport
 
     # Compares local and target custom fields
     #
-    # @param local_fields [Array<Hash>] Local custom fields
+    # @param local_fields  [Array<Hash>] Local custom fields
     # @param target_fields [Array<Hash>] Target custom fields
-    # @param api_key [String] API key for authentication
+    # @param q_all         [Boolean]     Comparison mode: true=all CustomFields, false=only a certain local project's CustomFields
+    # @param api_key       [String]      API key for authentication
     #
     # @return [Array<Hash>] Array of comparison results
     def self.compare_custom_fields(local_fields, target_fields, api_key)
       results = []
+      HrzLib::HrzLogger.debug_msg "HRZ Transport.compare_custom_fields: Comparing #{local_fields.length} local fields with #{target_fields.length} target fields"
       
-      Rails.logger.info "HRZ Transport.compare_custom_fields: Comparing #{local_fields.length} local fields with #{target_fields.length} target fields"
-      
+      # a) All local fields: Try to find them in the target.
       local_fields.each do |local_field|
         # Find matching field in target by name and type
         target_field = target_fields.find do |tf|
@@ -149,7 +150,7 @@ module HrzTransport
           name:             local_field[:name],
           local_type:       local_field[:field_format],
           customized_type:  local_field[:customized_type],
-          exists_locally:   true,                 # TODO: List also CFs, that only exist on the target, but not locally
+          exists_locally:   true,
           exists_in_target: !target_field.nil?,
           target_id:        target_field&.dig(:id),
           is_identical:     false,
@@ -160,6 +161,7 @@ module HrzTransport
           # Compare field properties
           comparison[:is_identical] = compare_field_properties(local_field, target_field, comparison[:differences], api_key)
           comparison[:target_id]    = target_field[:id]
+          target_field[:q_comparison_done] = true   # This works, because find returned a reference.
         else
           comparison[:differences] << {
             property:     'existence',
@@ -168,10 +170,33 @@ module HrzTransport
           }
         end
         
-        results << comparison
+
       end
       
-      Rails.logger.info "HRZ Transport: Comparison complete. Found #{results.count { |r| r[:is_identical] }} identical and #{results.count { |r| !r[:is_identical] }} different fields"
+      # b) Target fields, that we did not compare so far, exist only in the target.
+      if q_all
+        target_fields.each do |target_field|
+          comparison = {
+            local_id:         nil,
+            name:             target_field[:name],
+            local_type:       target_field[:field_format],
+            customized_type:  target_field[:customized_type],
+            exists_locally:   false,
+            exists_in_target: true,
+            target_id:        target_field&.dig(:id),
+            is_identical:     false,
+            differences:      []
+          }
+          comparison[:differences] << {
+            property:     'existence',
+            local_value:  'does not exist',
+            target_value: 'exists'
+          }
+          results << comparison
+        end
+      end # if q_all
+
+      HrzLib::HrzLogger.info_msg "HRZ Transport.compare_custom_fields: Comparison complete. Found #{results.count { |r| r[:is_identical] }} identical and #{results.count { |r| !r[:is_identical] }} different fields."
       
       results
     end  # compare_custom_fields
