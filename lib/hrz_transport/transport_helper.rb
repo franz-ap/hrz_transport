@@ -100,6 +100,7 @@ module HrzTransport
         b_target_url = get_target_base_url()
         return nil   if b_target_url.nil? || b_target_url.blank?
 
+        result = nil
         hsh_res = HrzLib::HrzHttp.http_request(b_target_url + "/hrz_custom_fields/#{field_id}.json",
                                                'GET',
                                                {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
@@ -108,11 +109,14 @@ module HrzTransport
         if hsh_res[:q_ok]
           data = JSON.parse(hsh_res[:body])
           # Rails.logger.info "HRZ Transport: Successfully fetched field details for ##{field_id}"
-          return data['custom_field'].deep_symbolize_keys
-        else
+          result = data['custom_field'].deep_symbolize_keys
+          HrzLib::HrzLogger.info_msg    "CF-#{field_id} body:   " + hsh_res[:body].inspect
+          HrzLib::HrzLogger.debug_msg   "CF-#{field_id} data:   " + data.inspect
+          HrzLib::HrzLogger.warning_msg "CF-#{field_id} result: " + result.inspect
+        #else
           # Error already reported. #Rails.logger.error "HRZ Transport: Failed to fetch field details. Status: #{response.code}"
-          return nil
         end
+        result
       rescue => e
         HrzLib::HrzLogger.error_msg "HRZ TransportHelper.fetch_target_field_details: Error fetching target field ##{field_id} details: #{e.message}"
         return nil
@@ -154,6 +158,7 @@ module HrzTransport
         if target_field
           # Compare field properties
           comparison[:is_identical] = compare_field_properties(local_field, target_field, comparison[:differences], api_key)
+          comparison[:target_id]    = target_field[:id]
         else
           comparison[:differences] << {
             property: 'existence',
@@ -217,11 +222,9 @@ module HrzTransport
     #
     # @return [Boolean] true if fields are identical, false otherwise.
     def self.compare_field_properties(local_field, target_field, differences, api_key)
-      HrzLib::HrzLogger.debug_msg "compare_field_properties: loc=" + local_field.inspect
-      HrzLib::HrzLogger.debug_msg "                 target_field=" + target_field.inspect
-
       q_identical = true
-      
+      #HrzLib::HrzLogger.debug_msg "compare_field_properties: loc=" + local_field.inspect
+      #HrzLib::HrzLogger.debug_msg "                 target_field=" + target_field.inspect
       # Get detailed information for comparison
       local_details  = HrzLib::CustomFieldHelper.get_custom_field(local_field[:id])
       target_details = fetch_target_field_details(target_field[:id], api_key)

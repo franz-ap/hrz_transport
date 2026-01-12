@@ -106,6 +106,9 @@
             <%= result[:name] %>
             <br/>
             <small class="customized-type"><%= l("label_hrz_type_#{result[:customized_type]}") %></small>
+            <a href="/custom_fields/<%= result[:local_id] %>/edit" target="_blank">ID <%= result[:local_id] %></a>
+            /
+            <a href="<%= @target_url %>/custom_fields/<%= result[:target_id] %>/edit" target="_blank">ID <%= result[:target_id] %></a>
           </td>
           <td class="field-type"><%= result[:local_type] %></td>
           <td class="status-column">
