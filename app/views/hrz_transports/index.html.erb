@@ -74,7 +74,7 @@
     </p>
   </fieldset>
 
-  <p style="margin-top: 15px;">abc
+  <p style="margin-top: 15px;">
     <%= hidden_field_tag 'compare', '1' %>
     <%= submit_tag l(:button_compare) %>
   </p>
@@ -131,7 +131,9 @@
             <% end %>
           </td>
           <td class="transport-column">
-            <% if @transport_direction != 'readonly' && !result[:is_identical] && result[:exists_in_target] %>
+            <% if !result[:is_identical]                                                       &&
+                  ( (@transport_direction == 'local_to_target' && result[:exists_locally]) ||
+                    (@transport_direction == 'target_to_local' && result[:exists_in_target])    ) %>
               <%= link_to '',
                           hrz_transports_execute_path(
                             field_id: result[:local_id],

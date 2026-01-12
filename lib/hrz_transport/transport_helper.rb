@@ -149,6 +149,7 @@ module HrzTransport
           name: local_field[:name],
           local_type: local_field[:field_format],
           customized_type: local_field[:customized_type],
+          exists_locally:   true,                 # TODO: List also CFs, that only exist on the target, but not locally
           exists_in_target: !target_field.nil?,
           target_id: target_field&.dig(:id),
           is_identical: false,
