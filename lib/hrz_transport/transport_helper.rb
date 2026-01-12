@@ -133,7 +133,7 @@ module HrzTransport
     # @param api_key       [String]      API key for authentication
     #
     # @return [Array<Hash>] Array of comparison results
-    def self.compare_custom_fields(local_fields, target_fields, api_key)
+    def self.compare_custom_fields(local_fields, target_fields, q_all, api_key)
       results = []
       HrzLib::HrzLogger.debug_msg "HRZ Transport.compare_custom_fields: Comparing #{local_fields.length} local fields with #{target_fields.length} target fields"
       
