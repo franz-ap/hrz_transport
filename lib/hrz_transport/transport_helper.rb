@@ -306,7 +306,8 @@ module HrzTransport
     def self.execute_transport(field_id, direction, api_key, doc_issue_local, doc_issue_target)
       begin
         if direction == 'local_to_target'
-          result = transport_local_to_target(field_id, api_key)
+          q_ok = transport_local_to_target(field_id, api_key)
+          result = { success: q_ok }
         elsif direction == 'target_to_local'
           result = transport_target_to_local(field_id, api_key)
         else
