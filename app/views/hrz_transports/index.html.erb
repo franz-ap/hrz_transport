@@ -122,7 +122,7 @@
             <% if result[:differences].present? %>
               <% result[:differences].each do |diff| %>
                 <div class="difference-item">
-                  <strong><%= l("label_hrz_property_#{diff[:property]}") %>:</strong>
+                  <strong><%= HrzTransport::TransportHelper.get_label_hrz_property(diff[:property]) %>:</strong>
                   <span class="value"><%= diff[:local_value] %></span>
                 </div>
               <% end %>
@@ -153,7 +153,7 @@
               <% if result[:differences].present? %>
                 <% result[:differences].each do |diff| %>
                   <div class="difference-item">
-                    <strong><%= l("label_hrz_property_#{diff[:property]}") %>:</strong>
+                    <strong><%= HrzTransport::TransportHelper.get_label_hrz_property(diff[:property]) %>:</strong>
                     <span class="value"><%= diff[:target_value] %></span>
                   </div>
                 <% end %>

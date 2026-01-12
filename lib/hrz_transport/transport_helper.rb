@@ -232,17 +232,41 @@ module HrzTransport
       HrzLib::HrzLogger.debug_msg "                   target_field=" + target_details.inspect
 
       q_identical = compare_1_field_property(local_details, target_details, 'name',            differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'description',     differences)  &&  q_identical
       q_identical = compare_1_field_property(local_details, target_details, 'field_format',    differences)  &&  q_identical
       q_identical = compare_1_field_property(local_details, target_details, 'is_required',     differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'is_for_all',      differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'visible',         differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'searchable',      differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'multiple',        differences)  &&  q_identical
       q_identical = compare_1_field_property(local_details, target_details, 'possible_values', differences)  &&  q_identical
       q_identical = compare_1_field_property(local_details, target_details, 'default_value',   differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'regexp',          differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'min_length',      differences)  &&  q_identical
+      q_identical = compare_1_field_property(local_details, target_details, 'max_length',      differences)  &&  q_identical
       q_identical = compare_1_field_property(local_details, target_details, 'formula',         differences)  &&  q_identical
       HrzLib::HrzLogger.debug_msg " --> differences=" + differences.inspect
       q_identical
     end  # compare_field_properties
     
 
-    
+
+    # Returns the label text for a given property.
+    # Replaces   l("label_hrz_property_#{diff[:property]}")  in index_html.erb to avoid duplicate translations.
+    # Most property names already exist in the standard texts.
+    # @param b_property [String] Property name
+    # @return [String] Label text
+    def self.get_label_hrz_property(b_property)
+      case b_property
+        when 'formula', 'existence'
+          I18n.t("label_hrz_property_#{b_property}")
+        else
+          I18n.t("field_#{b_property}")
+      end
+    end  # get_label_hrz_property
+
+
+
     # Executes a transport operation
     #
     # @param field_id [Integer] Local custom field ID

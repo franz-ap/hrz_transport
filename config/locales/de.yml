@@ -64,11 +64,6 @@ de:
   label_hrz_type_group: "Gruppe"
   
   # Field properties
-  label_hrz_property_name: "Name"
-  label_hrz_property_field_format: "Feldformat"
-  label_hrz_property_is_required: "Pflichtfeld"
-  label_hrz_property_possible_values: "Mögliche Werte"
-  label_hrz_property_default_value: "Standardwert"
   label_hrz_property_formula: "Formel"
   label_hrz_property_existence: "Existenz"
   
