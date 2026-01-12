@@ -140,20 +140,20 @@ module HrzTransport
       local_fields.each do |local_field|
         # Find matching field in target by name and type
         target_field = target_fields.find do |tf|
-          tf[:name] == local_field[:name] && 
+          tf[:name]            == local_field[:name] &&
           tf[:customized_type] == local_field[:customized_type]
         end
         
         comparison = {
-          local_id: local_field[:id],
-          name: local_field[:name],
-          local_type: local_field[:field_format],
-          customized_type: local_field[:customized_type],
+          local_id:         local_field[:id],
+          name:             local_field[:name],
+          local_type:       local_field[:field_format],
+          customized_type:  local_field[:customized_type],
           exists_locally:   true,                 # TODO: List also CFs, that only exist on the target, but not locally
           exists_in_target: !target_field.nil?,
-          target_id: target_field&.dig(:id),
-          is_identical: false,
-          differences: []
+          target_id:        target_field&.dig(:id),
+          is_identical:     false,
+          differences:      []
         }
         
         if target_field
@@ -162,8 +162,8 @@ module HrzTransport
           comparison[:target_id]    = target_field[:id]
         else
           comparison[:differences] << {
-            property: 'existence',
-            local_value: 'exists',
+            property:     'existence',
+            local_value:  'exists',
             target_value: 'does not exist'
           }
         end
@@ -317,8 +317,8 @@ module HrzTransport
         local_field = HrzLib::CustomFieldHelper.get_custom_field(local_field_id)
         return {success: false, error: 'Local field not found'} if local_field.nil?
         
-        target_url = get_target_base_url()
-        return {success: false, error: 'Target URL not configured'} if target_url.blank?
+        b_target_url = get_target_base_url()
+        return {success: false, error: 'Target URL not configured'} if b_target_url.blank?
         
         # Check if field exists in target
         target_fields = fetch_target_custom_fields(api_key)
