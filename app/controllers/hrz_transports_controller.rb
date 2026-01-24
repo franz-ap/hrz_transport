@@ -70,7 +70,7 @@ end  # index
 
     HrzLib::HrzLogger.debug_msg "HRZ Transport: Executing transport for field ##{field_id} in direction #{direction}"
 
-    result = HrzTransport::TransportHelper.execute_transport(
+    result = HrzTransport::TransportHelper.execute_cf_transport(
       field_id,
       direction,
       User.current.api_key,

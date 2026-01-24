@@ -307,10 +307,10 @@ module HrzTransport
     # @param doc_issue_target [String, nil] Target documentation issue ID
     #
     # @return [Hash] Result with :success, :field_name, and :error keys
-    def self.execute_transport(field_id, direction, api_key, doc_issue_local, doc_issue_target)
+    def self.execute_cf_transport(field_id, direction, api_key, doc_issue_local, doc_issue_target)
       begin
         if direction == 'local_to_target'
-          q_ok = transport_local_to_target(field_id, api_key)
+          q_ok = transport_cf_local_to_target(field_id, api_key)
           result = { success: q_ok }
         elsif direction == 'target_to_local'
           result = transport_target_to_local(field_id, api_key)
@@ -331,7 +331,7 @@ module HrzTransport
         Rails.logger.error e.backtrace.join("\n")
         {success: false, error: e.message}
       end
-    end  # execute_transport
+    end  # execute_cf_transport
 
 
 
@@ -341,7 +341,7 @@ module HrzTransport
     # @param api_key [String] API key for authentication
     #
     # @return [Boolean] true: ok, false: error/problems. Infos were already issued here inside.
-    def self.transport_local_to_target(local_field_id, api_key)
+    def self.transport_cf_local_to_target(local_field_id, api_key)
       begin
         # Get local field details
         local_field = HrzLib::CustomFieldHelper.get_custom_field(local_field_id)
@@ -366,17 +366,23 @@ module HrzTransport
                                                (target_field    ? 'PUT'                                          : 'POST'),
                                                {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
                                                {custom_field: field_data}.to_json,
-                                               'transport_local_to_target(' + (target_field ? 'Upd' : 'Cre') + "_CF '#{local_field[:name]}')",
+                                               'transport_cf_local_to_target(' + (target_field ? 'Upd' : 'Cre') + "_CF '#{local_field[:name]}')",
                                                [200, 201] )
         if hsh_res[:q_ok]
           HrzLib::HrzLogger.info_msg (target_field ? 'Updated' : 'Created') + " CustomField '#{local_field[:name]}' in target instance."
-        end
-         hsh_res[:q_ok]
+          begin
+            res_body = JSON.parse(hsh_res[:body])
+
+          rescue => exc
+            HrzLib::HrzLogger.error_msg "HRZ TransportHelper.transport_cf_local_to_target: Unexpected result from target lead to '#{exc.message}'. Details: #{hsh_res[:body]}"
+          end
+        end # if hsh_res[:q_ok]
+        hsh_res[:q_ok]
       rescue => e
-        HrzLib::HrzLogger.error_msg "HRZ TransportHelper.transport_local_to_target Error: #{e.message}"
+        HrzLib::HrzLogger.error_msg "HRZ TransportHelper.transport_cf_local_to_target Error: #{e.message}"
         HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
       end
-    end  # transport_local_to_target
+    end  # transport_cf_local_to_target
 
 
 
@@ -431,13 +437,14 @@ module HrzTransport
     #
     # @return [Hash] Cleaned field data ready for transport
     def self.prepare_field_data_for_transport(field)
-      # Remove read-only and instance-specific fields
-      data = field.except(:id, :created_at, :updated_at, :position)
+      # Remove read-only and instance-specific fields.
+      # Also :tracker_ids, because we have :trackers in addition, which is more safe.
+      data = field.except(:id, :created_at, :updated_at, :position, :tracker_ids)
 
       # Ensure arrays are properly formatted
       data[:possible_values] = data[:possible_values].to_a if data[:possible_values]
       data[:project_ids] = data[:project_ids].to_a if data[:project_ids]
-      data[:tracker_ids] = data[:tracker_ids].to_a if data[:tracker_ids]
+      #data[:tracker_ids] = data[:tracker_ids].to_a if data[:tracker_ids]
       data[:role_ids] = data[:role_ids].to_a if data[:role_ids]
 
       data
