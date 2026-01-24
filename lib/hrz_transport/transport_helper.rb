@@ -19,7 +19,7 @@ require 'json'
 
 module HrzTransport
   class TransportHelper
-    
+
     # Get the base URL of the target Redmine instance.
     # @return [String, nil] ... Redmine base URL. nil, if unknown.
     def self.get_target_base_url
@@ -58,8 +58,8 @@ module HrzTransport
       end
     end  # fetch_target_instance_info
 
-    
-    
+
+
     # Fetches custom fields from target instance
     # @param api_key [String] API key for authentication
     # @return [Array<Hash>, nil] Array of custom field hashes, or nil on error
@@ -67,7 +67,7 @@ module HrzTransport
       begin
         b_target_url = get_target_base_url()
         return nil   if b_target_url.nil? || b_target_url.blank?
-        
+
         hsh_res = HrzLib::HrzHttp.http_request(b_target_url + '/hrz_custom_fields.json',
                                                'GET',
                                                {'X-Redmine-API-Key' => api_key, 'Content-Type' => 'application/json'},
@@ -89,8 +89,8 @@ module HrzTransport
       end
     end  # fetch_target_custom_fields
 
-    
-    
+
+
     # Fetches detailed information about a specific custom field from target instance
     # @param field_id [Integer] The ID of the custom field
     # @param api_key [String] API key for authentication
@@ -122,21 +122,21 @@ module HrzTransport
         return nil
       end
     end  # fetch_target_field_details
-    
-    
+
+
 
     # Compares local and target custom fields
     #
     # @param local_fields  [Array<Hash>] Local custom fields
     # @param target_fields [Array<Hash>] Target custom fields
-    # @param q_all         [Boolean]     Comparison mode: true=all CustomFields, false=only a certain local project's CustomFields
+    # @param q_all_proj    [Boolean]     Comparison mode: true=all CustomFields, no matter in which project, false=only a certain local project's CustomFields
     # @param api_key       [String]      API key for authentication
     #
     # @return [Array<Hash>] Array of comparison results
-    def self.compare_custom_fields(local_fields, target_fields, q_all, api_key)
+    def self.compare_custom_fields(local_fields, target_fields, q_all_proj, api_key)
       results = []
       HrzLib::HrzLogger.debug_msg "HRZ Transport.compare_custom_fields: Comparing #{local_fields.length} local fields with #{target_fields.length} target fields"
-      
+
       # a) All local fields: Try to find them in the target.
       local_fields.each do |local_field|
         # Find matching field in target by name and type
@@ -144,7 +144,7 @@ module HrzTransport
           tf[:name]            == local_field[:name] &&
           tf[:customized_type] == local_field[:customized_type]
         end
-        
+
         comparison = {
           local_id:         local_field[:id],
           name:             local_field[:name],
@@ -156,7 +156,7 @@ module HrzTransport
           is_identical:     false,
           differences:      []
         }
-        
+
         if target_field
           # Compare field properties
           comparison[:is_identical] = compare_field_properties(local_field, target_field, comparison[:differences], api_key)
@@ -169,39 +169,43 @@ module HrzTransport
             target_value: 'does not exist'
           }
         end
-        
+        results << comparison
+      end # a)
 
-      end
-      
       # b) Target fields, that we did not compare so far, exist only in the target.
-      if q_all
+      #    We always fetch *all* CustomFields from the target. So, the below block only makes sense in all-projects mode.
+      #    Otherwise we would see all CustomFields as 'missing', that are not part of the selected local project.
+      if q_all_proj
         target_fields.each do |target_field|
-          comparison = {
-            local_id:         nil,
-            name:             target_field[:name],
-            local_type:       target_field[:field_format],
-            customized_type:  target_field[:customized_type],
-            exists_locally:   false,
-            exists_in_target: true,
-            target_id:        target_field&.dig(:id),
-            is_identical:     false,
-            differences:      []
-          }
-          comparison[:differences] << {
-            property:     'existence',
-            local_value:  'does not exist',
-            target_value: 'exists'
-          }
-          results << comparison
-        end
-      end # if q_all
+          if ! target_field.key?(:q_comparison_done)
+            # We did not compare this target field so far. It must be missing locally
+            comparison = {
+              local_id:         nil,
+              name:             target_field[:name],
+              local_type:       target_field[:field_format],
+              customized_type:  target_field[:customized_type],
+              exists_locally:   false,
+              exists_in_target: true,
+              target_id:        target_field&.dig(:id),
+              is_identical:     false,
+              differences:      []
+            }
+            comparison[:differences] << {
+              property:     'existence',
+              local_value:  'does not exist',
+              target_value: 'exists'
+            }
+            results << comparison
+          end # if
+        end # do
+      end # b) if q_all_proj
 
       HrzLib::HrzLogger.info_msg "HRZ Transport.compare_custom_fields: Comparison complete. Found #{results.count { |r| r[:is_identical] }} identical and #{results.count { |r| !r[:is_identical] }} different fields."
-      
+
       results
     end  # compare_custom_fields
-    
-    
+
+
 
     # Compares 1 field property
     # @param local_details  [Hash]    Local  field properties, detailed.
@@ -275,7 +279,7 @@ module HrzTransport
       HrzLib::HrzLogger.debug_msg " --> differences=" + differences.inspect
       q_identical
     end  # compare_field_properties
-    
+
 
 
     # Returns the label text for a given property.
@@ -313,23 +317,23 @@ module HrzTransport
         else
           return {success: false, error: 'Invalid transport direction'}
         end
-        
+
         if result[:success]
           # Add documentation notes if issue IDs provided
           add_documentation_note(doc_issue_local, result[:message], 'local') if doc_issue_local.present?
           add_documentation_note(doc_issue_target, result[:message], 'target', api_key) if doc_issue_target.present?
         end
-        
+
         result
-        
+
       rescue => e
         Rails.logger.error "HRZ Transport: Transport execution failed: #{e.message}"
         Rails.logger.error e.backtrace.join("\n")
         {success: false, error: e.message}
       end
     end  # execute_transport
-    
-    
+
+
 
     # Transports a custom field definition from local to target instance
     #
@@ -342,20 +346,20 @@ module HrzTransport
         # Get local field details
         local_field = HrzLib::CustomFieldHelper.get_custom_field(local_field_id)
         return {success: false, error: 'Local field not found'} if local_field.nil?
-        
+
         b_target_url = get_target_base_url()
         return {success: false, error: 'Target URL not configured'} if b_target_url.blank?
-        
+
         # Check if field exists in target
         target_fields = fetch_target_custom_fields(api_key)
         target_field = target_fields&.find do |tf|
-          tf[:name] == local_field[:name] && 
+          tf[:name] == local_field[:name] &&
           tf[:customized_type] == local_field[:customized_type]
         end
-        
+
         # Prepare field data
         field_data = prepare_field_data_for_transport(local_field)
-        
+
         #                                                          Update existing field --V                     /  create a new field -V
         hsh_res = HrzLib::HrzHttp.http_request(b_target_url +
                                                   (target_field ? "/hrz_custom_fields/#{target_field[:id]}.json" : '/hrz_custom_fields.json'),
@@ -374,8 +378,8 @@ module HrzTransport
       end
     end  # transport_local_to_target
 
-    
-    
+
+
     # Transports a custom field definition from target to local instance
     #
     # @param local_field_id [Integer] Local custom field ID (used to identify the field by name/type)
@@ -387,39 +391,39 @@ module HrzTransport
         # Get local field to identify which field to fetch from target
         local_field = HrzLib::CustomFieldHelper.get_custom_field(local_field_id)
         return {success: false, error: 'Local field not found'} if local_field.nil?
-        
+
         # Find matching field in target
         target_fields = fetch_target_custom_fields(api_key)
         target_field_summary = target_fields&.find do |tf|
-          tf[:name] == local_field[:name] && 
+          tf[:name] == local_field[:name] &&
           tf[:customized_type] == local_field[:customized_type]
         end
-        
+
         return {success: false, error: 'Field not found in target instance'} if target_field_summary.nil?
-        
+
         # Get detailed target field information
         target_field = fetch_target_field_details(target_field_summary[:id], api_key)
         return {success: false, error: 'Could not fetch target field details'} if target_field.nil?
-        
+
         # Prepare field data (exclude read-only fields)
         field_data = prepare_field_data_for_transport(target_field)
-        
+
         # Update local field
         success = HrzLib::CustomFieldHelper.update_custom_field(local_field_id, field_data)
-        
+
         if success
           message = "Updated custom field '#{local_field[:name]}' from target instance"
           {success: true, field_name: local_field[:name], message: message}
         else
           {success: false, field_name: local_field[:name], error: 'Failed to update local field'}
         end
-        
+
       rescue => e
         {success: false, error: e.message}
       end
     end  # transport_target_to_local
-    
-    
+
+
 
     # Prepares field data for transport (removes read-only and instance-specific fields)
     #
@@ -429,18 +433,18 @@ module HrzTransport
     def self.prepare_field_data_for_transport(field)
       # Remove read-only and instance-specific fields
       data = field.except(:id, :created_at, :updated_at, :position)
-      
+
       # Ensure arrays are properly formatted
       data[:possible_values] = data[:possible_values].to_a if data[:possible_values]
       data[:project_ids] = data[:project_ids].to_a if data[:project_ids]
       data[:tracker_ids] = data[:tracker_ids].to_a if data[:tracker_ids]
       data[:role_ids] = data[:role_ids].to_a if data[:role_ids]
-      
+
       data
     end  # prepare_field_data_for_transport
 
-    
-    
+
+
     # Adds a documentation note to an issue
     #
     # @param issue_id [String, Integer] Issue ID
@@ -451,7 +455,7 @@ module HrzTransport
       begin
         timestamp = Time.now.strftime('%Y-%m-%d %H:%M:%S')
         note_text = "[#{timestamp}] Custom Field Transport: #{message}"
-        
+
         q_ok = false
         if location == 'local'
           # Add note to local issue
@@ -480,6 +484,6 @@ module HrzTransport
         HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
       end
     end  # add_documentation_note
-    
+
   end  # class TransportHelper
 end  # module HrzTransport

@@ -17,11 +17,13 @@
 
 class HrzTransportsController < ApplicationController
   before_action :require_admin
-  
+
 # GET /hrz_transports
 # Shows the transport comparison and execution page
 def index
-  @projects = Project.all.order(:name)
+  @projects_act_w_cf = Project.active
+                         .joins(:custom_values)
+                         .distinct.order(:name)
   @comparison_scope = params[:comparison_scope] || 'all'
   @selected_project_id = params[:project_id]
   @transport_direction = params[:transport_direction] || 'readonly'
@@ -55,7 +57,7 @@ def index
 
   HrzLib::HrzLogger.debug_msg "HRZ Transport: @comparison_results present? #{@comparison_results.present?}   @comparison_results count: #{@comparison_results&.length || 0}"
 end  # index
-  
+
 
 
   # POST /hrz_transports/execute
@@ -65,9 +67,9 @@ end  # index
     direction = params[:direction]
     doc_issue_local = params[:doc_issue_local]
     doc_issue_target = params[:doc_issue_target]
-    
+
     HrzLib::HrzLogger.debug_msg "HRZ Transport: Executing transport for field ##{field_id} in direction #{direction}"
-    
+
     result = HrzTransport::TransportHelper.execute_transport(
       field_id,
       direction,
@@ -75,13 +77,13 @@ end  # index
       doc_issue_local,
       doc_issue_target
     )
-    
+
     if result[:success]
       flash[:notice] = l(:notice_hrz_transport_success, field_name: result[:field_name])
     else
       flash[:error] = l(:error_hrz_transport_failed, error: result[:error])
     end
-    
+
     redirect_to hrz_transports_path(
       comparison_scope: params[:comparison_scope],
       project_id: params[:project_id],
@@ -90,24 +92,29 @@ end  # index
       doc_issue_target: doc_issue_target
     )
   end  # execute
-  
+
   private
-  
+
 
 
   # Tests the connection to the target instance
   def test_connection
     begin
       info = HrzTransport::TransportHelper.fetch_target_instance_info(User.current.api_key)
-      
+
       if info
-        @target_instance_name = info[:app_title]
+        @target_instance_name   = info[:app_title]
         @target_redmine_version = info[:redmine_version]
-        @target_connection_ok = true
-        flash.now[:notice] = "Connected to target instance '#{@target_instance_name}', Redmine version #{@target_redmine_version}, hrz_lib version: #{info[:plugin_version_hrz_lib]}"
-        HrzLib::HrzLogger.debug_msg "HRZ Transport: Successfully connected to target: #{@target_instance_name}"
+        @target_hrz_lib_version = info[:plugin_version_hrz_lib]
+        @target_connection_ok   = true
+        if @comparison_results.nil?
+          # When comparison_results are available, there will be an info bar with this information. No need to display it in 2 places.
+          flash.now[:notice] = "Connected to target instance '#{@target_instance_name}', Redmine version: #{@target_redmine_version}, hrz_lib version: #{@target_hrz_lib_version}"
+          HrzLib::HrzLogger.debug_msg "HRZ Transport: Successfully connected to target: #{@target_instance_name}"
+        end
       else
         @target_connection_ok = false
+        @comparison_results   = nil     # Connection lost (or never existed) --> comparison_results are not/no longer valid.
         flash.now[:error] = l(:error_hrz_cannot_connect_to_target)
         HrzLib::HrzLogger.error_msg "HRZ Transport: Cannot connect to target instance"
       end
@@ -119,12 +126,12 @@ end  # index
   end  # test_connection
 
 
-  
+
   # Performs the comparison between local and target custom fields
   def perform_comparison
     begin
       HrzLib::HrzLogger.debug_msg "HRZ Transport: Starting comparison..."
-      
+
       # Get local custom fields
       if @comparison_scope == 'all'
         @local_fields = HrzLib::CustomFieldHelper.list_custom_fields
@@ -134,21 +141,21 @@ end  # index
         @local_fields = get_project_custom_fields(project)
         HrzLib::HrzLogger.debug_msg "HRZ Transport: Found #{@local_fields.length} local custom fields for project #{project.name}"
       end
-      
+
       # Get target custom fields
       HrzLib::HrzLogger.debug_msg "HRZ Transport: Fetching target custom fields..."
       @target_fields = HrzTransport::TransportHelper.fetch_target_custom_fields(
         User.current.api_key
       )
-      
+
       if @target_fields.nil?
         flash.now[:error] = l(:error_hrz_cannot_fetch_target_fields)
         HrzLib::HrzLogger.error_msg "HRZ Transport: Failed to fetch target fields"
         return
       end
-      
+
       HrzLib::HrzLogger.debug_msg "HRZ Transport: Found #{@target_fields.length} target custom fields.  Comparing ..."
-      
+
       # Compare fields
       @comparison_results = HrzTransport::TransportHelper.compare_custom_fields(
         @local_fields,
@@ -156,13 +163,13 @@ end  # index
         (@comparison_scope == 'all'),
         User.current.api_key
       )
-      
+
       HrzLib::HrzLogger.debug_msg "HRZ Transport: Comparison complete. Results: #{@comparison_results.length} comparison results for fields"
-      
+
       if @comparison_results.empty?
         flash.now[:warning] = l(:warning_hrz_no_fields_to_compare)
       end
-      
+
     rescue ActiveRecord::RecordNotFound
       flash.now[:error] = l(:error_project_not_found)
       HrzLib::HrzLogger.error_msg "HRZ Transport: Project not found"
@@ -172,7 +179,7 @@ end  # index
       HrzLib::HrzLogger.error_msg e.backtrace.join("\n")
     end
   end  # perform_comparison
-  
+
 
 
   # Gets custom fields used in a specific project
@@ -180,7 +187,7 @@ end  # index
   def get_project_custom_fields(project)
     HrzLib::HrzLogger.debug_msg 'get_project_custom_fields: project=' + project.inspect
     fields = []
-    
+
     # Get issue custom fields for this project's trackers
     project.trackers.each do |tracker|
       tracker.custom_fields.each do |cf|

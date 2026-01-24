@@ -42,7 +42,7 @@
       <p>
         <label><%= l(:label_project) %> <span class="required">*</span></label>
         <%= select_tag 'project_id',
-                       options_from_collection_for_select(@projects, :id, :name, @selected_project_id),
+                       options_from_collection_for_select(@projects_act_w_cf, :id, :name, @selected_project_id),
                        prompt: l(:label_please_select) %>
       </p>
     </div>
@@ -84,7 +84,11 @@
   <h3><%= l(:label_hrz_comparison_results) %></h3>
 
   <p class="info-box">
-    <strong><%= l(:label_hrz_target_instance) %>:</strong> <%= @target_url %><br/>
+    <strong><%= l(:label_hrz_target_instance) %>:</strong>
+    <a href="<%= @target_url %>" target="_blank"><%= @target_url %></a>
+    <strong><%= "'#{@target_instance_name}'" %></strong>
+    <%= ", Redmine version: #{@target_redmine_version}, hrz_lib version: #{@target_hrz_lib_version}" %>
+    <br/>
     <strong><%= l(:label_hrz_fields_compared) %>:</strong> <%= @comparison_results.length %>
   </p>
 
@@ -106,9 +110,17 @@
             <%= result[:name] %>
             <br/>
             <small class="customized-type"><%= l("label_hrz_type_#{result[:customized_type]}") %></small>
-            <a href="/custom_fields/<%= result[:local_id] %>/edit" target="_blank">ID <%= result[:local_id] %></a>
+            <% if result[:exists_locally] %>
+              <a href="/custom_fields/<%= result[:local_id] %>/edit" target="_blank">ID <%= result[:local_id] %></a>
+            <% else  %>
+              --
+            <% end %>
             /
-            <a href="<%= @target_url %>/custom_fields/<%= result[:target_id] %>/edit" target="_blank">ID <%= result[:target_id] %></a>
+            <% if result[:exists_in_target] %>
+              <a href="<%= @target_url %>/custom_fields/<%= result[:target_id] %>/edit" target="_blank">ID <%= result[:target_id] %></a>
+            <% else  %>
+              --
+            <% end %>
           </td>
           <td class="field-type"><%= result[:local_type] %></td>
           <td class="status-column">
