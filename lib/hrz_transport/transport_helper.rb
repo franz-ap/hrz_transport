@@ -261,22 +261,31 @@ module HrzTransport
       HrzLib::HrzLogger.debug_msg "compare_field_properties/d: loc=" + local_details.inspect
       HrzLib::HrzLogger.debug_msg "                   target_field=" + target_details.inspect
 
-      q_identical = compare_1_field_property(local_details, target_details, 'name',            differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'description',     differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'field_format',    differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'is_required',     differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'is_for_all',      differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'visible',         differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'searchable',      differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'multiple',        differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'possible_values', differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'default_value',   differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'regexp',          differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'min_length',      differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'max_length',      differences)  &&  q_identical
-      q_identical = compare_1_field_property(local_details, target_details, 'formula',         differences)  &&  q_identical
-      #TODO: link  display as radio/checkbox, used as a filter, roles, text formatting and Full width layout (for long text fields), trackers
-      HrzLib::HrzLogger.debug_msg " --> differences=" + differences.inspect
+      if local_details && target_details
+        q_identical = compare_1_field_property(local_details, target_details, 'name',            differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'description',     differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'field_format',    differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'is_required',     differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'is_for_all',      differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'visible',         differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'searchable',      differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'multiple',        differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'possible_values', differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'default_value',   differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'regexp',          differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'min_length',      differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'max_length',      differences)  &&  q_identical
+        q_identical = compare_1_field_property(local_details, target_details, 'formula',         differences)  &&  q_identical
+        #TODO: link  display as radio/checkbox, used as a filter, roles, text formatting and Full width layout (for long text fields), trackers
+        HrzLib::HrzLogger.debug_msg " --> differences=" + differences.inspect
+      else
+        differences << {
+            property:     'details',
+            local_value:  (local_details?  ? 'present' : 'missing'),
+            target_value: (target_details? ? 'present' : 'missing')
+          }
+        q_identical = false
+      end
       q_identical
     end  # compare_field_properties
 
